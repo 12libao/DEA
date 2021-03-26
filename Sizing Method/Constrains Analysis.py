@@ -2,6 +2,7 @@
 # Georgia Institute of Technology #
 # import pyatmos as am
 import numpy as np
+import math
 import matplotlib.pylab as plt
 
 """
@@ -83,7 +84,7 @@ class ConstrainsAnalysis:
         P_WTO = ConstrainsAnalysis.master_equation(self, n=load_factor, dh_dt=0, dV_dt=0, V=V, rho=rho)
         return P_WTO
 
-    def take_off_ground_roll(self, s_G=1500, K_TO=1.4, rho=1.225, CL_max=1.5):
+    def take_off_ground_roll(self, s_G=1500, K_TO=1.4, rho=1.225, CL_max=1.2):
         """
         A320neo take-off speed is about 150 knots, which is about 75 m/s
         required runway length is about 2000 m
@@ -98,6 +99,15 @@ class ConstrainsAnalysis:
                 * self.W_S ** (3 / 2)
         return P_WTO
 
+    def landing(self, s_L=1000, mu_B=0.18, K_TD=1.2, t_FR=3, rho=1.225, xi_L=0.8, CL_max=1.2):
+
+        a = self.beta/(rho*self.g0*xi_L)*math.log(1 + xi_L/(mu_B*CL_max/K_TD**2))
+        b = t_FR*K_TD*(2*self.beta/(rho*CL_max))**0.5
+        c = s_L
+
+        Y = ((-b+(b**2+4*a*c)**0.5)/(2*a))**2
+        return Y
+
 
 if __name__ == "__main__":
     nn = 100
@@ -106,6 +116,7 @@ if __name__ == "__main__":
     P_W_constant_speed_climb = np.zeros(nn)
     P_W_turn = np.zeros(nn)
     P_W_take_off_ground_roll = np.zeros(nn)
+    W_S_landing = np.zeros(nn)
 
     for i in range(nn):
         problem = ConstrainsAnalysis(tau=0.5, beta=0.97, alpha=1, K1=0.2, K2=0,
@@ -114,12 +125,14 @@ if __name__ == "__main__":
         P_W_constant_speed_climb[i] = problem.constant_speed_climb()
         P_W_turn[i] = problem.turn()
         P_W_take_off_ground_roll[i] = problem.take_off_ground_roll()
+        W_S_landing[i] = problem.landing()
 
     plt.figure(figsize=(8, 6))
     plt.plot(wingload, P_W_cruise, 'b-', linewidth=1.5, label='cruise')
     plt.plot(wingload, P_W_constant_speed_climb, 'k-', linewidth=1.5, label='constant speed climb')
     plt.plot(wingload, P_W_turn, 'g-', linewidth=1.5, label='turn')
-    plt.plot(wingload, P_W_take_off_ground_roll, 'r-', linewidth=1.5, label='take off ground roll')
+    plt.plot(wingload, P_W_take_off_ground_roll, 'y-', linewidth=1.5, label='take off ground roll')
+    plt.plot(W_S_landing, np.linspace(0, 50, nn), 'r-', linewidth=1.5, label='landing')
     plt.xlabel('Wing Load: $W_{TO}$/S (N/${m^2}$)')
     plt.ylabel('Power-to-Load: $T_{SL}$/$W_{TO}$ (W/N)')
     plt.title('Constraint Analysis')
