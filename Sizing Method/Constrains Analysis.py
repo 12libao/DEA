@@ -1,6 +1,6 @@
 # author: Bao Li # 
 # Georgia Institute of Technology #
-# import pyatmos as am
+
 import numpy as np
 import math
 import matplotlib.pylab as plt
@@ -112,6 +112,7 @@ class ConstrainsAnalysis:
 if __name__ == "__main__":
     nn = 100
     wingload = np.linspace(1000, 6000, nn)
+
     P_W_cruise = np.zeros(nn)
     P_W_constant_speed_climb = np.zeros(nn)
     P_W_turn = np.zeros(nn)
