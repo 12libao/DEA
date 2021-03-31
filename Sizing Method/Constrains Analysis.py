@@ -135,7 +135,7 @@ if __name__ == "__main__":
     plt.plot(wingload, P_W_take_off_ground_roll, 'y-', linewidth=1.5, label='take off ground roll')
     plt.plot(W_S_landing, np.linspace(0, 50, nn), 'r-', linewidth=1.5, label='landing')
     plt.xlabel('Wing Load: $W_{TO}$/S (N/${m^2}$)')
-    plt.ylabel('Power-to-Load: $T_{SL}$/$W_{TO}$ (W/N)')
+    plt.ylabel('Power-to-Load: $P_{SL}$/$W_{TO}$ (W/N)')
     plt.title('Constraint Analysis')
     plt.legend(loc=0)
     plt.grid()

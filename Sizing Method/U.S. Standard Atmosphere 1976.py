@@ -9,7 +9,6 @@
 """
 
 import numpy as np
-import math
 import matplotlib.pylab as plt
 
 
@@ -27,6 +26,11 @@ class atmosphere:
         :output P (Pa = N/m^2): pressure
                 T (K): temperature
                 rho (kg/m^3): density
+                a (m/s): sound speed
+
+                delta: dimensionless static pressure = P/P0
+                theta: dimensionless static temperature = T/T0
+                sigma: dimensionless static density = rho/rho0
         """
 
         # input:
@@ -37,8 +41,12 @@ class atmosphere:
         self.R_star = 8.3144598  # universal gas constant (J/mol.K)
         self.g0 = 9.80665  # gravitational acceleration (m/s^2)
         self.M = 0.0289644  # molar mass of Earth's air (kg/mol)
+
+        # sea level (standard)
         self.T0 = 288.15  # sea level temperature (K)
         self.P0 = 101325  # sea level pressure (N/m^2)
+        self.rho0 = 1.225  # sea level density (kg/m^3)
+        self.a0 = 340.3  # sea level sound speed (m/s)
 
         # temperature lapse rate (K/m)
         self.lapse_rate = np.array([-0.0065, 0.0, 0.001, 0.0028, 0.0, -0.0028, -0.002])
@@ -96,8 +104,28 @@ class atmosphere:
     def density(self):
         P = atmosphere.pressure(self)
         T = atmosphere.temperature(self)
-        rho = P*self.M/(self.R_star*T)
+        rho = P * self.M / (self.R_star * T)
         return rho
+
+    def sound_speed(self):
+        T = atmosphere.temperature(self)
+        a = self.a0 * (T / self.T0) ** 0.5
+        return a
+
+    def dimensionless_static_pressure(self):
+        P = atmosphere.pressure(self)
+        delta = P / self.P0
+        return delta
+
+    def dimensionless_static_temperature(self):
+        T = atmosphere.temperature(self)
+        theta = T / self.T0
+        return theta
+
+    def dimensionless_static_density(self):
+        rho = atmosphere.density(self)
+        sigma = rho / self.rho0
+        return sigma
 
 
 if __name__ == '__main__':
@@ -107,25 +135,30 @@ if __name__ == '__main__':
     T = np.zeros(nn)
     P = np.zeros(nn)
     rho = np.zeros(nn)
+    a = np.zeros(nn)
 
     for i in range(nn):
         prob = atmosphere(geometric_altitude=h[i])
         T[i] = prob.temperature()
         P[i] = prob.pressure()
         rho[i] = prob.density()
+        a[i] = prob.sound_speed()
 
-    fig, ax = plt.subplots(1, 3, figsize=(8, 8))
-    st = fig.suptitle("Standard Atmosphere")
+    fig, ax = plt.subplots(1, 4, figsize=(12, 10))
+    st = fig.suptitle("U.S. STANDARD ATMOSPHERE (1976)", fontsize=20)
 
-    ax[0].plot(T, h/1000, 'b-', linewidth=1.5, label='cruise')
+    ax[0].plot(T, h / 1000, 'b-', linewidth=1.5, label='cruise')
     ax[0].set_xlabel('Temperature: T (K)')
     ax[0].set_ylabel('Altitude: h (km)')
 
-    ax[1].plot(P, h/1000, 'k-', linewidth=1.5, label='constant speed climb')
-    ax[1].set_xlabel('Pressure: P (N/${m^2}$)')
+    ax[1].plot(a, h / 1000, 'y-', linewidth=1.5, label='turn')
+    ax[1].set_xlabel('Sound Speed: a (m/s)')
 
-    ax[2].plot(rho, h/1000, 'g-', linewidth=1.5, label='turn')
-    ax[2].set_xlabel('Density: rho (Kg/${m^3}$)')
+    ax[2].plot(P, h / 1000, 'k-', linewidth=1.5, label='constant speed climb')
+    ax[2].set_xlabel('Pressure: P (N/${m^2}$)')
+
+    ax[3].plot(rho, h / 1000, 'g-', linewidth=1.5, label='turn')
+    ax[3].set_xlabel('Density: rho (Kg/${m^3}$)')
 
     # shift subplots down:
     st.set_y(0.96)
