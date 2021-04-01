@@ -37,7 +37,7 @@ class atmosphere:
         self.h = geometric_altitude
 
         # constant:
-        self.r0 = 6356577  # the earth's radius (m)
+        self.r0 = 6356577.0  # the earth's radius (m)
         self.R_star = 8.3144598  # universal gas constant (J/mol.K)
         self.g0 = 9.80665  # gravitational acceleration (m/s^2)
         self.M = 0.0289644  # molar mass of Earth's air (kg/mol)
@@ -51,7 +51,7 @@ class atmosphere:
         # temperature lapse rate (K/m)
         self.lapse_rate = np.array([-0.0065, 0.0, 0.001, 0.0028, 0.0, -0.0028, -0.002])
         # height above sea level for each lapse rate (m)
-        self.zi = np.array([0, 11000, 20000, 32000, 47000, 51000, 71000, 84853])
+        self.zi = np.array([0.0, 11000.0, 20000.0, 32000.0, 47000.0, 51000.0, 71000.0, 84853.0])
         # number of piecewise linear curve-fit
         self.n = len(self.lapse_rate)
 
