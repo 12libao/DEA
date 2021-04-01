@@ -7,7 +7,7 @@
 
 import numpy as np
 import matplotlib.pylab as plt
-import Sizing_Method.US_Standard_Atmosphere_1976 as atm
+import Sizing_Method.Other.US_Standard_Atmosphere_1976 as atm
 
 
 class lift_drag_polar:
@@ -141,11 +141,10 @@ if __name__ == '__main__':
     plt.ylabel('Drag Coefficients')
     plt.title('Drag Breakdown \n'
               'Inviscid Drag: due to lift (induced drag) \n'
-              'Viscous Drag due to lift (skin friction and pressure drag) \n'
+              'Viscous Drag: due to lift (skin friction and pressure drag) \n'
               'Most drag at cruise is parasite drag \n'
               'Most drag at takeoff is lift-dependent drag \n')
     plt.xticks(ind, ('Takeoff', 'Climb', 'Cruise'))
     plt.yticks(np.arange(0, 2, 20))
     plt.legend((p1[0], p2[0], p3[0]), ('Inviscid Drag', 'Viscous Drag', 'Zero Lift Drag'))
-
     plt.show()
