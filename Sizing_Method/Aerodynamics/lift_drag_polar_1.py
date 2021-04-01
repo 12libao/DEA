@@ -115,7 +115,8 @@ if __name__ == '__main__':
     plt.plot(CD[2, :], CL, 'g-', linewidth=1.5, label='Cruise')
     plt.xlabel('$C_{D}$')
     plt.ylabel('$C_{L}$')
-    plt.title('Lift Drag Polar:Cl=[0, 0.25]')
+    plt.title('Lift Drag Polar:Cl=[0, 0.25] \n'
+              'Assume Camber Airfoil')
     plt.legend(loc=0)
     plt.grid()
     plt.show()
