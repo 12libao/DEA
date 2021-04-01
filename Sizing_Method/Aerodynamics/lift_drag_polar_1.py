@@ -18,20 +18,21 @@ class lift_drag_polar:
         where we use A320neo as the baseline.
     """
 
-    def __init__(self, velocity, altitude):
+    def __init__(self, velocity, altitude, AR):
         """
 
         :input v (m/s): velocity
                h (m): altitude
+               AR: wing aspect ratio, normally between 7 and 10
 
-        :output P (Pa = N/m^2): pressure
-                T (K): temperature
-                rho (kg/m^3): density
-                a (m/s): sound speed
+        :output K1: 2nd Order Coefficient for Cd
+                K2: 1st Order Coefficient for Cd
+                CD_0: drag coefficient at zero lift
         """
 
         self.v = velocity
         self.h = altitude
+        self.AR = AR
 
         # Mach number based on different altitude
         # The Mach number is between 0 to 0.82
@@ -43,13 +44,13 @@ class lift_drag_polar:
         self.CL_min = (0.1 + 0.3) / 2  # Assume constant: for most large cargo and passenger, 0.1 < Cl_min < 0.3
         self.CD_min = 0.018  # Assume constant: From Mattingly Figure 2.9
 
-    def K_apo1(self, AR):
+    def K_apo1(self):
         """is the inviscid drag due to lift (induced drag)
 
         :param AR: wing aspect ratio, normally between 7 and 10
         """
         e = (0.75 + 0.85) / 2  # wing planform efficiency factor is between 0.75 and 0.85, no more than 1
-        return 1 / (np.pi * AR * e)
+        return 1 / (np.pi * self.AR * e)
 
     def K_apo2(self):
         """is the viscous drag due to lift (skin friction and pressure drag)
@@ -58,105 +59,93 @@ class lift_drag_polar:
         Increase with Mach number increase
         Thus, assume they have linear relationship
         """
-        slop = (0.028 - 0.002) / (0.82 - 0.01)
-        return self.a * slop
+        K_apo2_max = 0.028
+        K_apo2_min = 0.001
+
+        a_max = 0.85
+        a_min = 0.001
+
+        slop = (K_apo2_max - K_apo2_min) / (a_max - a_min)
+        K_apo2 = K_apo2_max - ((a_max - self.a)*slop)
+        return K_apo2
 
     def K1(self):
-        return lift_drag_polar.K_apo2(self) + lift_drag_polar.K_apo2(self)
+        """2nd Order Coefficient for Cd"""
+        return lift_drag_polar.K_apo1(self) + lift_drag_polar.K_apo2(self)
 
     def K2(self):
+        """1st Order Coefficient for Cd"""
         return -2 * lift_drag_polar.K_apo2(self) * self.CL_min
 
     def CD_0(self):
+        """drag coefficient at zero lift"""
         return self.CD_min + lift_drag_polar.K_apo2(self) * self.CL_min ** 2
 
     def lift_drag_polar_equation(self, CL):
-        CD = lift_drag_polar.K1(self)*CL**2 + lift_drag_polar.K2(self) + lift_drag_polar.CD_0(self)
-        return CD
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+        CD = lift_drag_polar.K1(self)*CL**2 + lift_drag_polar.K2(self)*CL + lift_drag_polar.CD_0(self)
+        inviscid_drag = lift_drag_polar.K_apo1(self)*CL**2
+        viscous_drag = lift_drag_polar.K_apo2(self)*CL**2 - 2*lift_drag_polar.K_apo2(self)*self.CL_min*CL
+        parasite_drag = lift_drag_polar.CD_0(self)
+        return CD, inviscid_drag, viscous_drag, parasite_drag
 
 
 if __name__ == '__main__':
-    prob = lift_drag_polar(velocity=340, altitude=1000)
+    AR = 10.3
+    input_list = [[10, 10], [100, 1000], [250, 20000]]
+    n = len(input_list)
+    velocity, altitude = [], []
+    for i, element in enumerate(input_list):
+        velocity.append(element[0])
+        altitude.append(element[1])
 
+    nn = 100
+    # CL = np.linspace(0.0, 1.0, nn)
+    CL = np.linspace(0.0, 0.25, nn)
 
+    CD = np.zeros((n, nn))
 
+    for i, element in enumerate(input_list):
+        prob = lift_drag_polar(velocity=element[0], altitude=element[1], AR=AR)
+        for j in range(nn):
+            CD[i, j], _, _, _ = prob.lift_drag_polar_equation(CL[j])
 
+    plt.figure(figsize=(8, 6))
+    plt.plot(CD[0, :], CL, 'b-', linewidth=1.5, label='Takeoff')
+    plt.plot(CD[1, :], CL, 'k-', linewidth=1.5, label='Climb')
+    plt.plot(CD[2, :], CL, 'g-', linewidth=1.5, label='Cruise')
+    plt.xlabel('$C_{D}$')
+    plt.ylabel('$C_{L}$')
+    plt.title('Lift Drag Polar:Cl=[0, 0.25]')
+    plt.legend(loc=0)
+    plt.grid()
+    plt.show()
 
+    plt.figure(figsize=(12, 10))
+    inviscid_drag = np.zeros(n)
+    viscous_drag = np.zeros(n)
+    parasite_drag = np.zeros(n)
+    lift_drag = np.zeros(n)
 
+    ind = np.arange(n)  # the x locations for the groups
+    width = 0.6  # the width of the bars: can also be len(x) sequence
+    CL_h = [1.0, 0.8, 0.6]
+    for i, element in enumerate(input_list):
+        prob = lift_drag_polar(velocity=element[0], altitude=element[1], AR=AR)
+        _, inviscid_drag[i], viscous_drag[i], parasite_drag[i] = prob.lift_drag_polar_equation(CL=CL_h[i])
+        lift_drag[i] = inviscid_drag[i] + viscous_drag[i]
 
+    p1 = plt.bar(ind, inviscid_drag, width)
+    p2 = plt.bar(ind, viscous_drag, width, bottom=inviscid_drag)  # , yerr=womenStd)
+    p3 = plt.bar(ind, parasite_drag, width, bottom=lift_drag)
 
+    plt.ylabel('Drag Coefficients')
+    plt.title('Drag Breakdown \n'
+              'Inviscid Drag: due to lift (induced drag) \n'
+              'Viscous Drag due to lift (skin friction and pressure drag) \n'
+              'Most drag at cruise is parasite drag \n'
+              'Most drag at takeoff is lift-dependent drag \n')
+    plt.xticks(ind, ('Takeoff', 'Climb', 'Cruise'))
+    plt.yticks(np.arange(0, 2, 20))
+    plt.legend((p1[0], p2[0], p3[0]), ('Inviscid Drag', 'Viscous Drag', 'Zero Lift Drag'))
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    plt.show()
