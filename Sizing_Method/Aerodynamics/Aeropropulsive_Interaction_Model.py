@@ -9,12 +9,12 @@ Reference:
     Upstream Propellers on Wing Lift,” 53rd AIAA Aerospace Sciences Meeting, Kissimmee, FL, USA, January 5-9 2015.
 
 
-A series of delta terms (ΔCL, ΔCD0 , ΔCDi , and Δηdp) must be estimated in order to incorporate the
+A series of delta terms (ΔCL, ΔCD0 , ΔCDi) must be estimated in order to incorporate the
 aero propulsive interaction effects in the design process. This section proposes a method to estimate
 these terms for distributed propellers mounted ahead of the wing leading edge.
 
 
-The method proposed in this section is based on the approach of Patterson and German. It represents the propellers
+The method is based on the approach of Patterson and German (reference 2). It represents the propellers
 as actuator disks and the wing as a flat plate, incorporating a semi-empirical correction for finite slipstream height.
 The model includes several assumptions worth highlighting:
 
@@ -156,7 +156,6 @@ class Aero_propulsion:
 
 
 if __name__ == '__main__':
-    AR = 10.3
     input_list = [[10, 20], [1000, 100], [12000, 250]]
     n = len(input_list)
     velocity, altitude = [], []
@@ -164,55 +163,61 @@ if __name__ == '__main__':
         altitude.append(element[0])
         velocity.append(element[1])
 
-    nn = 10
+    nn = 100
     CL = np.linspace(0.0, 1.0, nn)
     # CL = np.linspace(0.0, 0.25, nn)
 
-    CD = np.zeros((n, nn))
+    CD = np.zeros((2*n, nn))
 
     for i, element in enumerate(input_list):
         prob = Aero_propulsion(altitude=element[0], velocity=element[1], Hp=0.5, n=12, P_W=0.3*element[1], W_S=500)
+        prob2 = ad.lift_drag_polar(altitude=element[0], velocity=element[1])
         for j in range(nn):
             CD[i, j], _, _, _ = prob.lift_drag_polar_equation(CL[j])
-            print(j)
+            CD[i+n, j], _, _, _ = prob2.lift_drag_polar_equation(CL[j])
 
     plt.figure(figsize=(8, 6))
-    plt.plot(CD[0, :], CL, 'b-', linewidth=1.5, label='Takeoff')
-    plt.plot(CD[1, :], CL, 'k-', linewidth=1.5, label='Climb')
-    plt.plot(CD[2, :], CL, 'g-', linewidth=1.5, label='Cruise')
+    plt.plot(CD[0, :], CL, 'b-', linewidth=1.5, label='Takeoff with DP')
+    plt.plot(CD[1, :], CL, 'k-', linewidth=1.5, label='Climb with DP')
+    plt.plot(CD[2, :], CL, 'g-', linewidth=1.5, label='Cruise with DP')
+    plt.plot(CD[3, :], CL, 'b--', linewidth=1.5, label='Takeoff')
+    plt.plot(CD[4, :], CL, 'k--', linewidth=1.5, label='Climb')
+    plt.plot(CD[5, :], CL, 'g--', linewidth=1.5, label='Cruise')
     plt.xlabel('$C_{D}$')
     plt.ylabel('$C_{L}$')
-    plt.title('Lift Drag Polar:Cl=[0, 0.25] \n'
-              'Assume Camber Airfoil')
+    plt.title('Lift Drag Polar:Cl=[0, 1]')
     plt.legend(loc=0)
     plt.grid()
     plt.show()
 
-    plt.figure(figsize=(12, 10))
-    inviscid_drag = np.zeros(n)
-    viscous_drag = np.zeros(n)
-    parasite_drag = np.zeros(n)
-    lift_drag = np.zeros(n)
+    plt.figure(figsize=(8, 6))
+    inviscid_drag, inviscid_drag2 = np.zeros(n), np.zeros(n)
+    viscous_drag, viscous_drag2 = np.zeros(n), np.zeros(n)
+    parasite_drag, parasite_drag2 = np.zeros(n), np.zeros(n)
+    lift_drag, lift_drag2 = np.zeros(n), np.zeros(n)
 
     ind = np.arange(n)  # the x locations for the groups
-    width = 0.6  # the width of the bars: can also be len(x) sequence
+    width = 0.3  # the width of the bars: can also be len(x) sequence
     CL_h = [2, 1.2, 0.6]  # takeoff Cl= Cl_max for takeoff
     for i, element in enumerate(input_list):
         prob = Aero_propulsion(altitude=element[0], velocity=element[1], Hp=0.5, n=12, P_W=0.3*element[1], W_S=500)
+        prob2 = ad.lift_drag_polar(altitude=element[0], velocity=element[1])
         _, inviscid_drag[i], viscous_drag[i], parasite_drag[i] = prob.lift_drag_polar_equation(CL=CL_h[i])
+        _, inviscid_drag2[i], viscous_drag2[i], parasite_drag2[i] = prob2.lift_drag_polar_equation(CL=CL_h[i])
         lift_drag[i] = inviscid_drag[i] + viscous_drag[i]
+        lift_drag2[i] = inviscid_drag2[i] + viscous_drag2[i]
 
-    p1 = plt.bar(ind, inviscid_drag, width)
-    p2 = plt.bar(ind, viscous_drag, width, bottom=inviscid_drag)  # , yerr=womenStd)
-    p3 = plt.bar(ind, parasite_drag, width, bottom=lift_drag)
+    p1 = plt.bar(ind-width/2, inviscid_drag2, width, color='b', alpha=0.8, label='inviscid drag')
+    p2 = plt.bar(ind-width/2, viscous_drag2, width, bottom=inviscid_drag2, color='g', alpha=0.8, label='viscous drag')
+    p3 = plt.bar(ind-width/2, parasite_drag2, width, bottom=lift_drag2, color='y', alpha=0.8, label='zero_lift drag')
+
+    p4 = plt.bar(ind + width / 2, inviscid_drag, width, color='b', alpha=0.5, label='inviscid drag with DP')
+    p5 = plt.bar(ind + width / 2, viscous_drag, width, bottom=inviscid_drag, color='g', alpha=0.5, label='viscous drag with DP')
+    p6 = plt.bar(ind + width / 2, parasite_drag, width, bottom=lift_drag, color='y', alpha=0.5, label='zero_lift drag with DP')
 
     plt.ylabel('Drag Coefficients')
-    plt.title('Drag Breakdown \n'
-              'Inviscid Drag: due to lift (induced drag) \n'
-              'Viscous Drag: due to lift (skin friction and pressure drag) \n'
-              'Most drag at cruise is parasite drag \n'
-              'Most drag at takeoff is lift-dependent drag \n')
+    plt.title('Drag Breakdown without DP vs with DP')
     plt.xticks(ind, ('Takeoff', 'Climb', 'Cruise'))
     plt.yticks(np.arange(0, 2, 20))
-    plt.legend((p1[0], p2[0], p3[0]), ('Inviscid Drag', 'Viscous Drag', 'Zero Lift Drag'))
+    plt.legend(loc=0)
     plt.show()

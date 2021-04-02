@@ -102,8 +102,8 @@ if __name__ == '__main__':
     n = len(input_list)
     velocity, altitude = [], []
     for i, element in enumerate(input_list):
-        altitude.append(element[1])
-        velocity.append(element[0])
+        altitude.append(element[0])
+        velocity.append(element[1])
 
     nn = 100
     # CL = np.linspace(0.0, 1.0, nn)
@@ -112,7 +112,7 @@ if __name__ == '__main__':
     CD = np.zeros((n, nn))
 
     for i, element in enumerate(input_list):
-        prob = lift_drag_polar(velocity=element[0], altitude=element[1], AR=AR)
+        prob = lift_drag_polar(velocity=element[1], altitude=element[0], AR=AR)
         for j in range(nn):
             CD[i, j], _, _, _ = prob.lift_drag_polar_equation(CL[j])
 
@@ -138,12 +138,12 @@ if __name__ == '__main__':
     width = 0.6  # the width of the bars: can also be len(x) sequence
     CL_h = [2, 1.2, 0.6]  # takeoff Cl= Cl_max for takeoff
     for i, element in enumerate(input_list):
-        prob = lift_drag_polar(velocity=element[0], altitude=element[1], AR=AR)
+        prob = lift_drag_polar(velocity=element[1], altitude=element[0], AR=AR)
         _, inviscid_drag[i], viscous_drag[i], parasite_drag[i] = prob.lift_drag_polar_equation(CL=CL_h[i])
         lift_drag[i] = inviscid_drag[i] + viscous_drag[i]
 
     p1 = plt.bar(ind, inviscid_drag, width)
-    p2 = plt.bar(ind, viscous_drag, width, bottom=inviscid_drag)  # , yerr=womenStd)
+    p2 = plt.bar(ind, viscous_drag, width, bottom=inviscid_drag)
     p3 = plt.bar(ind, parasite_drag, width, bottom=lift_drag)
 
     plt.ylabel('Drag Coefficients')
