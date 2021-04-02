@@ -38,19 +38,19 @@ import Sizing_Method.Aerodynamics.MachNmuber as Mach
 import Sizing_Method.Aerodynamics.LiftDragPolar_Conv as ad
 
 
-class aero_propulsive:
+class Aero_propulsion:
     """Estimation of ΔCL and ΔCD"""
 
-    def __init__(self, altitude, velocity, Hp, n, P_W, W_S, CL, sweep_angle=25,
-                 S=124, b=35.8, delta_b=0.5, delta_Dp=0.1, xp=0.5, beta=0.6, AOA_p=0, Cf=0.009):
+    def __init__(self, altitude, velocity, Hp, n, P_W, W_S, sweep_angle=25.0,
+                 S=124.0, b=35.8, delta_b=0.5, delta_Dp=0.1, xp=0.5, beta=0.6, AOA_p=0.0, Cf=0.009):
         """
 
-        :param Hp:
-        :param n:
+        :param Hp: P_motor/P_total
+        :param n: number of motor
         :param P_W:
         :param W_S:
-        :param S:
-        :param b:
+        :param S: wing area
+        :param b: wingspan
         :param delta_b:
         :param delta_Dp:
         :param xp:
@@ -58,6 +58,9 @@ class aero_propulsive:
         :param CL: lift coefficient
         :param AOA_p: propeller angle of attack
         :param Cf: skin friction coefficient
+
+        :output: 1. delta_CD_0: zero lift drag coefficient changes because of the population distribution
+                 2. delta_CL: lift coefficient changes because of the population distribution
         """
 
         self.h = altitude
@@ -67,7 +70,6 @@ class aero_propulsive:
         self.delta_y1 = delta_b
         self.delta_y2 = delta_Dp
         self.beta = beta
-        self.cl = CL
         self.sp = sweep_angle * np.pi / 180
         self.aoa_p = AOA_p
         self.cf = Cf
@@ -105,9 +107,8 @@ class aero_propulsive:
         self.aw = (ap + 1) / rw_rp ** 2 - 1
 
         self.m = Mach.mach(self.h, self.v).mach_number()  # Mach number
-        # geometric angle of attack of the wing
-        self.aoa_w = self.cl / (2 * np.pi * self.ar) * [2 + (self.ar ** 2 * (1 - self.m ** 2)
-                                                             * (1 + (np.tan(self.sp)) ** 2 / (1 - self.m ** 2)) + 4) ** 0.5]
+        # geometric angle of attack of the wing, where assume cl=1
+        self.aoa_w = (1 / (2 * np.pi * self.ar)) * (2 + (self.ar ** 2 * (1 - self.m ** 2) * (1 + (np.tan(self.sp)) ** 2 / (1 - self.m ** 2)) + 4) ** 0.5)
 
     def delta_lift_coefficient(self):
         """estimate the lift coefficient changes because of the population distribution"""
@@ -115,23 +116,26 @@ class aero_propulsive:
         delta_cl = 2 * np.pi * ((np.sin(self.aoa_w) - self.aw * self.beta * np.sin(self.aoa_p - self.aoa_w))
                                 * ((self.aw * self.beta) ** 2 + 2 * self.aw * self.beta * np.cos(self.aoa_p) + 1) ** 0.5
                                 - np.sin(self.aoa_w))
-        self.delta_cl_total = delta_cl*self.delta_y1
-        return self.delta_cl_total
+        delta_cl_total = delta_cl * self.delta_y1
+        return delta_cl_total
 
     def delta_CD_0(self):
         """estimate the zero lift drag coefficient changes because of the population distribution"""
 
-        self.delta_cd0 = self.delta_y1*self.aw**2*self.cf
-        return self.delta_cd0
+        delta_cd0 = self.delta_y1 * self.aw ** 2 * self.cf
+        return delta_cd0
 
-    def delta_lift_induced_drag_coefficient(self):
+    def delta_lift_induced_drag_coefficient(self, CL):
         """estimate the lift induced drag coefficient changes because of the population distribution"""
 
         e = (0.75 + 0.85) / 2  # wing planform efficiency factor is between 0.75 and 0.85, no more than 1
-        delta_cdi = (self.delta_cl_total**2 + 2*self.cl*self.delta_cl_total)/(np.pi*self.ar*e)
+        delta_cl = Aero_propulsion.delta_lift_coefficient(self)
+
+        delta_cdi = (delta_cl ** 2 + 2 * CL * delta_cl) / (np.pi * self.ar * e)
+
         return delta_cdi
 
-    def lift_drag_polar_equation(self):
+    def lift_drag_polar_equation(self, CL):
         K1 = ad.lift_drag_polar(velocity=self.v, altitude=self.h).K1()
         K2 = ad.lift_drag_polar(velocity=self.v, altitude=self.h).K2()
         CD_0 = ad.lift_drag_polar(velocity=self.v, altitude=self.h).CD_0()
@@ -139,35 +143,37 @@ class aero_propulsive:
         K_apo2 = ad.lift_drag_polar(velocity=self.v, altitude=self.h).K_apo2()
 
         CL_min = (0.1 + 0.3) / 2  # Assume constant: for most large cargo and passenger, 0.1 < Cl_min < 0.3
+        delta_cl = Aero_propulsion.delta_lift_coefficient(self)
+        delta_cd0 = Aero_propulsion.delta_CD_0(self)
+        CD = K1 * (CL + delta_cl) ** 2 + K2 * (CL + delta_cl) + (CD_0 + delta_cd0)
 
-        CD = K1 * self.cl ** 2 + K2 * self.cl + (CD_0+self.delta_cd0)
-
-        inviscid_drag = K_apo1 * (self.cl+self.delta_cl_total) ** 2
-        viscous_drag = K_apo2 * (self.cl+self.delta_cl_total) ** 2 - 2 * K_apo2 * CL_min * (self.cl+self.delta_cl_total)
-        parasite_drag = CD_0+self.delta_cd0
+        inviscid_drag = K_apo1 * (CL + delta_cl) ** 2
+        viscous_drag = K_apo2 * (CL + delta_cl) ** 2 - 2 * K_apo2 * CL_min * (
+                    CL + delta_cl)
+        parasite_drag = CD_0 + delta_cd0
 
         return CD, inviscid_drag, viscous_drag, parasite_drag
 
 
 if __name__ == '__main__':
     AR = 10.3
-    input_list = [[10, 10], [100, 1000], [250, 20000]]
+    input_list = [[10, 20], [1000, 100], [12000, 250]]
     n = len(input_list)
     velocity, altitude = [], []
     for i, element in enumerate(input_list):
-        velocity.append(element[0])
-        altitude.append(element[1])
+        altitude.append(element[0])
+        velocity.append(element[1])
 
-    nn = 100
-    # CL = np.linspace(0.0, 1.0, nn)
-    CL = np.linspace(0.0, 0.25, nn)
+    nn = 10
+    CL = np.linspace(0.0, 1.0, nn)
+    # CL = np.linspace(0.0, 0.25, nn)
 
     CD = np.zeros((n, nn))
 
     for i, element in enumerate(input_list):
-        # prob = lift_drag_polar(velocity=element[0], altitude=element[1], AR=AR)
+        prob = Aero_propulsion(altitude=element[0], velocity=element[1], Hp=0.5, n=12, P_W=0.3*element[1], W_S=500)
         for j in range(nn):
-            # CD[i, j], _, _, _ = prob.lift_drag_polar_equation(CL[j])
+            CD[i, j], _, _, _ = prob.lift_drag_polar_equation(CL[j])
             print(j)
 
     plt.figure(figsize=(8, 6))
@@ -192,8 +198,8 @@ if __name__ == '__main__':
     width = 0.6  # the width of the bars: can also be len(x) sequence
     CL_h = [2, 1.2, 0.6]  # takeoff Cl= Cl_max for takeoff
     for i, element in enumerate(input_list):
-        # prob = lift_drag_polar(velocity=element[0], altitude=element[1], AR=AR)
-        #_, inviscid_drag[i], viscous_drag[i], parasite_drag[i] = prob.lift_drag_polar_equation(CL=CL_h[i])
+        prob = Aero_propulsion(altitude=element[0], velocity=element[1], Hp=0.5, n=12, P_W=0.3*element[1], W_S=500)
+        _, inviscid_drag[i], viscous_drag[i], parasite_drag[i] = prob.lift_drag_polar_equation(CL=CL_h[i])
         lift_drag[i] = inviscid_drag[i] + viscous_drag[i]
 
     p1 = plt.bar(ind, inviscid_drag, width)

@@ -19,7 +19,7 @@ class lift_drag_polar:
         where we use A320neo as the baseline.
     """
 
-    def __init__(self, velocity, altitude, AR):
+    def __init__(self, altitude, velocity, AR):
         """
 
         :input v (m/s): velocity
@@ -98,12 +98,12 @@ class lift_drag_polar:
 
 if __name__ == '__main__':
     AR = 10.3
-    input_list = [[10, 10], [100, 1000], [250, 20000]]
+    input_list = [[10, 20], [1000, 100], [12000, 250]]
     n = len(input_list)
     velocity, altitude = [], []
     for i, element in enumerate(input_list):
-        velocity.append(element[0])
-        altitude.append(element[1])
+        altitude.append(element[0])
+        velocity.append(element[1])
 
     nn = 100
     # CL = np.linspace(0.0, 1.0, nn)
