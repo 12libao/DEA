@@ -12,7 +12,7 @@ import Sizing_Method.Other.US_Standard_Atmosphere_1976 as atm
 
 
 class lift_drag_polar:
-    """this is the class to generate lift-drag polar equation based on Mattingly Equ 2.9 and section 2.3.1
+    """this is the class to generate lift-drag polar equation
 
     1. SI Units
     2. All assumptions, data, tables, and figures are based on large cargo and passenger aircraft,
