@@ -19,7 +19,7 @@ class lift_drag_polar:
         where we use A320neo as the baseline.
     """
 
-    def __init__(self, velocity, altitude, AR):
+    def __init__(self, velocity, altitude, AR=10.3):
         """
 
         :input v (m/s): velocity

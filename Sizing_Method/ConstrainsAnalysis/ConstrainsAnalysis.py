@@ -17,8 +17,8 @@ class ConstrainsAnalysis:
         """
 
         :param tau: power fraction of i_th power path
-        :param beta: power lapse ratio
-        :param alpha: weight fraction
+        :param beta: weight fraction
+        :param alpha: power lapse ratio
         :param K1: drag polar coefficient for 2nd order term
         :param K2: drag polar coefficient for 1st order term
         :param C_D0: the drag coefficient at zero lift

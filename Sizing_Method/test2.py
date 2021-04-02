@@ -29,3 +29,5 @@ print("len",len(c))
 
 ind = np.arange(10)
 print("ind", ind)
+
+print(np.sin(np.pi/6))
