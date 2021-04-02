@@ -3,6 +3,7 @@
 """Reference:
 
 1: (2.3.1) Mattingly, Jack D., William H. Heiser, and David T. Pratt. Aircraft engine design. American Institute of Aeronautics and Astronautics, 2002.
+2. Wedderspoon, J. R. "The high lift development of the A320 aircraft." International Congress of the Aeronautical Sciences, Paper. Vol. 2. No. 2. 1986.
 """
 
 import numpy as np
@@ -66,7 +67,7 @@ class lift_drag_polar:
         a_min = 0.001
 
         slop = (K_apo2_max - K_apo2_min) / (a_max - a_min)
-        K_apo2 = K_apo2_max - ((a_max - self.a)*slop)
+        K_apo2 = K_apo2_max - ((a_max - self.a) * slop)
         return K_apo2
 
     def K1(self):
@@ -82,11 +83,17 @@ class lift_drag_polar:
         return self.CD_min + lift_drag_polar.K_apo2(self) * self.CL_min ** 2
 
     def lift_drag_polar_equation(self, CL):
-        CD = lift_drag_polar.K1(self)*CL**2 + lift_drag_polar.K2(self)*CL + lift_drag_polar.CD_0(self)
-        inviscid_drag = lift_drag_polar.K_apo1(self)*CL**2
-        viscous_drag = lift_drag_polar.K_apo2(self)*CL**2 - 2*lift_drag_polar.K_apo2(self)*self.CL_min*CL
+        CD = lift_drag_polar.K1(self) * CL ** 2 + lift_drag_polar.K2(self) * CL + lift_drag_polar.CD_0(self)
+        inviscid_drag = lift_drag_polar.K_apo1(self) * CL ** 2
+        viscous_drag = lift_drag_polar.K_apo2(self) * CL ** 2 - 2 * lift_drag_polar.K_apo2(self) * self.CL_min * CL
         parasite_drag = lift_drag_polar.CD_0(self)
         return CD, inviscid_drag, viscous_drag, parasite_drag
+
+    def maximum_lift_coefficient(self, sweep_angle):
+        """Based on reference 1: table 2.1, and reference 2"""
+        CL_max_takeoff = 2.3 * np.cos(sweep_angle)
+        CL_max_landing = 2.8 * np.cos(sweep_angle)
+        return CL_max_takeoff, CL_max_landing
 
 
 if __name__ == '__main__':
@@ -129,7 +136,7 @@ if __name__ == '__main__':
 
     ind = np.arange(n)  # the x locations for the groups
     width = 0.6  # the width of the bars: can also be len(x) sequence
-    CL_h = [1.0, 0.8, 0.6]
+    CL_h = [2, 1.2, 0.6]  # takeoff Cl= Cl_max for takeoff
     for i, element in enumerate(input_list):
         prob = lift_drag_polar(velocity=element[0], altitude=element[1], AR=AR)
         _, inviscid_drag[i], viscous_drag[i], parasite_drag[i] = prob.lift_drag_polar_equation(CL=CL_h[i])
