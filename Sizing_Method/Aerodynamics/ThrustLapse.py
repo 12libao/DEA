@@ -62,6 +62,6 @@ class thrust_lapse_calculation:
 
 
 if __name__ == '__main__':
-    thrust_lapse1 = thrust_lapse_calculation(altitude=10, velocity=10).high_bypass_ratio_turbofan()
-    thrust_lapse2 = thrust_lapse_calculation(altitude=10000, velocity=250).high_bypass_ratio_turbofan()
+    thrust_lapse1 = thrust_lapse_calculation(altitude=10, velocity=10).high_bypass_ratio_turbofan()  # the case for takeoff
+    thrust_lapse2 = thrust_lapse_calculation(altitude=10000, velocity=250).high_bypass_ratio_turbofan()  # the case for cruise
     print(thrust_lapse1, thrust_lapse2)
