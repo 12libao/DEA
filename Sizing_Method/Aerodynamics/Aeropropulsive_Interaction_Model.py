@@ -117,6 +117,7 @@ class Aero_propulsion:
                                 * ((self.aw * self.beta) ** 2 + 2 * self.aw * self.beta * np.cos(self.aoa_p) + 1) ** 0.5
                                 - np.sin(self.aoa_w))
         delta_cl_total = delta_cl * self.delta_y1
+        print(delta_cl_total)
         return delta_cl_total
 
     def delta_CD_0(self):
@@ -167,14 +168,14 @@ if __name__ == '__main__':
     CL = np.linspace(0.0, 1.0, nn)
     # CL = np.linspace(0.0, 0.25, nn)
 
-    CD = np.zeros((2*n, nn))
+    CD = np.zeros((2 * n, nn))
 
     for i, element in enumerate(input_list):
-        prob = Aero_propulsion(altitude=element[0], velocity=element[1], Hp=0.5, n=12, P_W=0.3*element[1], W_S=500)
+        prob = Aero_propulsion(altitude=element[0], velocity=element[1], Hp=0.5, n=12, P_W=0.3 * element[1], W_S=500)
         prob2 = ad.lift_drag_polar(altitude=element[0], velocity=element[1])
         for j in range(nn):
             CD[i, j], _, _, _ = prob.lift_drag_polar_equation(CL[j])
-            CD[i+n, j], _, _, _ = prob2.lift_drag_polar_equation(CL[j])
+            CD[i + n, j], _, _, _ = prob2.lift_drag_polar_equation(CL[j])
 
     plt.figure(figsize=(8, 6))
     plt.plot(CD[0, :], CL, 'b-', linewidth=1.5, label='Takeoff with DP')
@@ -200,20 +201,24 @@ if __name__ == '__main__':
     width = 0.3  # the width of the bars: can also be len(x) sequence
     CL_h = [2, 1.2, 0.6]  # takeoff Cl= Cl_max for takeoff
     for i, element in enumerate(input_list):
-        prob = Aero_propulsion(altitude=element[0], velocity=element[1], Hp=0.5, n=12, P_W=0.3*element[1], W_S=500)
+        prob = Aero_propulsion(altitude=element[0], velocity=element[1], Hp=0.5, n=12, P_W=0.3 * element[1], W_S=500)
         prob2 = ad.lift_drag_polar(altitude=element[0], velocity=element[1])
         _, inviscid_drag[i], viscous_drag[i], parasite_drag[i] = prob.lift_drag_polar_equation(CL=CL_h[i])
         _, inviscid_drag2[i], viscous_drag2[i], parasite_drag2[i] = prob2.lift_drag_polar_equation(CL=CL_h[i])
         lift_drag[i] = inviscid_drag[i] + viscous_drag[i]
         lift_drag2[i] = inviscid_drag2[i] + viscous_drag2[i]
 
-    p1 = plt.bar(ind-width/2, inviscid_drag2, width, color='b', alpha=0.8, label='inviscid drag')
-    p2 = plt.bar(ind-width/2, viscous_drag2, width, bottom=inviscid_drag2, color='g', alpha=0.8, label='viscous drag')
-    p3 = plt.bar(ind-width/2, parasite_drag2, width, bottom=lift_drag2, color='y', alpha=0.8, label='zero_lift drag')
+    p1 = plt.bar(ind - width / 2, inviscid_drag2, width, color='b', alpha=0.8, label='inviscid drag')
+    p2 = plt.bar(ind - width / 2, viscous_drag2, width, bottom=inviscid_drag2, color='g', alpha=0.8,
+                 label='viscous drag')
+    p3 = plt.bar(ind - width / 2, parasite_drag2, width, bottom=lift_drag2, color='y', alpha=0.8,
+                 label='zero_lift drag')
 
     p4 = plt.bar(ind + width / 2, inviscid_drag, width, color='b', alpha=0.5, label='inviscid drag with DP')
-    p5 = plt.bar(ind + width / 2, viscous_drag, width, bottom=inviscid_drag, color='g', alpha=0.5, label='viscous drag with DP')
-    p6 = plt.bar(ind + width / 2, parasite_drag, width, bottom=lift_drag, color='y', alpha=0.5, label='zero_lift drag with DP')
+    p5 = plt.bar(ind + width / 2, viscous_drag, width, bottom=inviscid_drag, color='g', alpha=0.5,
+                 label='viscous drag with DP')
+    p6 = plt.bar(ind + width / 2, parasite_drag, width, bottom=lift_drag, color='y', alpha=0.5,
+                 label='zero_lift drag with DP')
 
     plt.ylabel('Drag Coefficients')
     plt.title('Drag Breakdown without DP vs with DP')
