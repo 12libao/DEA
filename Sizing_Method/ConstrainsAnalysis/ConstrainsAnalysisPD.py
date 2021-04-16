@@ -1,6 +1,5 @@
 # author: Bao Li # 
 # Georgia Institute of Technology #
-
 import numpy as np
 import matplotlib.pylab as plt
 import Sizing_Method.Other.US_Standard_Atmosphere_1976 as atm
@@ -15,7 +14,7 @@ The unit use is IS standard
 class ConstrainsAnalysis:
     """This is a power-based master constraints analysis"""
 
-    def __init__(self, altitude, velocity, tau, beta, wing_load, C_DR=0):
+    def __init__(self, altitude, velocity, tau, beta, wing_load, n=1, C_DR=0):
         """
 
         :param tau: power fraction of i_th power path
@@ -24,6 +23,7 @@ class ConstrainsAnalysis:
         :param K2: drag polar coefficient for 1st order term
         :param C_D0: the drag coefficient at zero lift
         :param C_DR: additional drag caused, for example, by external stores,
+        :param n: load factor
         braking parachutes or flaps, or temporary external hardware
 
         :return:
@@ -36,6 +36,8 @@ class ConstrainsAnalysis:
 
         self.tau = tau
         self.beta = beta
+        self.n = n
+        self.W_S = wing_load
 
         # power lapse ratio
         self.alpha = thrust_lapse.thrust_lapse_calculation(altitude=self.h,
@@ -46,20 +48,23 @@ class ConstrainsAnalysis:
         self.C_D0 = ad.aerodynamics_without_pd(self.h, self.v).CD_0()
         self.C_DR = C_DR
 
-        self.W_S = wing_load
+        self.q = 0.5 * self.rho * self.v ** 2
+        self.cl = self.n * self.beta * self.W_S / self.q
+        self.delta_cl = ad.aerodynamics_with_pd(self.h, self.v, Hp=0.5, n=12, P_W=25, W_S=self.W_S).delta_lift_coefficient(self.cl)
+        self.delta_cd0 = ad.aerodynamics_with_pd(self.h, self.v, Hp=0.5, n=12, P_W=25, W_S=self.W_S).delta_CD_0()
+
         self.g0 = 9.80665
 
         self.coeff = self.tau * self.beta / self.alpha
 
-    def master_equation(self, n, dh_dt, dV_dt):
-        q = 0.5 * self.rho * self.v ** 2
+    def master_equation(self, dh_dt, dV_dt):
 
-        linear_term = self.K1 * n ** 2 * self.beta / q
-        inverse_term = (self.C_D0 + self.C_DR) * q / self.beta
-        constant_term = self.K2 * n + dh_dt / self.v + dV_dt / self.g0
-        # print(linear_term,'\n', inverse_term, '\n', constant_term)
+        cl = self.cl + self.delta_cl
+        a = self.q / (self.W_S * self.beta)
+        b = self.K1 * cl ** 2 + self.K2 * cl + self.C_D0 + self.C_DR + self.delta_cd0
+        c = dh_dt / self.v + dV_dt / self.g0
 
-        P_WTO = self.coeff * (linear_term * self.W_S + inverse_term / self.W_S + constant_term) * self.v
+        P_WTO = self.coeff * (a*b+c) * self.v
         return P_WTO
 
     def cruise(self):
@@ -68,7 +73,7 @@ class ConstrainsAnalysis:
         U.S. Standard Atmosphere Air Properties - SI Units at 10000 m is 1.225 kg/m^3
         """
 
-        P_WTO = ConstrainsAnalysis.master_equation(self, n=1, dh_dt=0, dV_dt=0)
+        P_WTO = ConstrainsAnalysis.master_equation(self, dh_dt=0, dV_dt=0)
         return P_WTO
 
     def constant_speed_climb(self, h_initial, h_final, delta_t):
@@ -81,7 +86,7 @@ class ConstrainsAnalysis:
         if dh_dt <= 0:
             print("it is not climb")
 
-        P_WTO = ConstrainsAnalysis.master_equation(self, n=1, dh_dt=dh_dt, dV_dt=0)
+        P_WTO = ConstrainsAnalysis.master_equation(self, dh_dt=dh_dt, dV_dt=0)
         return P_WTO
 
     def acceleration_climb(self, v_initial, v_final, h_initial, h_final, delta_t):
@@ -98,7 +103,7 @@ class ConstrainsAnalysis:
         if dh_dt <= 0:
             print("it is not climb")
 
-        P_WTO = ConstrainsAnalysis.master_equation(self, n=1, dh_dt=dh_dt, dV_dt=dv_dt)
+        P_WTO = ConstrainsAnalysis.master_equation(self, dh_dt=dh_dt, dV_dt=dv_dt)
         return P_WTO
 
     def turn(self, turn_rate=3):
@@ -108,7 +113,7 @@ class ConstrainsAnalysis:
         """
 
         load_factor = (1 + ((turn_rate * np.pi / 180) * self.v / self.g0) ** 2) ** 0.5
-        P_WTO = ConstrainsAnalysis.master_equation(self, n=load_factor, dh_dt=0, dV_dt=0)
+        P_WTO = ConstrainsAnalysis.master_equation(self, dh_dt=0, dV_dt=0)
         return P_WTO
 
     def horizontal_acceleration(self, v_initial, v_final, delta_t):
@@ -117,7 +122,7 @@ class ConstrainsAnalysis:
         if dv_dt <= 0:
             print("it is no acceleration")
 
-        P_WTO = ConstrainsAnalysis.master_equation(self, n=1, dh_dt=0, dV_dt=dv_dt)
+        P_WTO = ConstrainsAnalysis.master_equation(self, dh_dt=0, dV_dt=dv_dt)
         return P_WTO
 
     def take_off(self):
@@ -167,7 +172,6 @@ if __name__ == "__main__":
     j = np.zeros(nn)
     l = np.zeros(nn)
 
-
     b = np.zeros(nn)
     P_W_cruise = np.zeros(nn)
     P_W_constant_speed_climb = np.zeros(nn)
@@ -180,23 +184,23 @@ if __name__ == "__main__":
                                          wing_load=wingload[i]).take_off()
         landing[i] = ConstrainsAnalysis(altitude=0, velocity=71 / 2, tau=1, beta=0.7, wing_load=wingload[i]).landing()
         stall_speed[i] = ConstrainsAnalysis(altitude=0, velocity=80, tau=1, beta=0.948, wing_load=wingload[i]).stall()
-        e[i] = ConstrainsAnalysis(altitude=5, velocity=80, tau=1, beta=0.985, wing_load=wingload[i]).acceleration_climb(78, 85, 0, 10, 1)
-        j[i] = ConstrainsAnalysis(altitude=(10000-3000)/2, velocity=(225-200)/2, tau=1, beta=0.985, wing_load=wingload[i]).acceleration_climb(200, 225, 3000, 10000, 1200)
+        e[i] = ConstrainsAnalysis(altitude=5, velocity=80, tau=1, beta=0.985, wing_load=wingload[i]).acceleration_climb(
+            78, 85, 0, 10, 1)
+        j[i] = ConstrainsAnalysis(altitude=(10000 - 3000) / 2, velocity=(225 - 200) / 2, tau=1, beta=0.985, wing_load=wingload[i]).acceleration_climb(200, 225, 3000, 10000, 1200)
         l[i] = ConstrainsAnalysis(altitude=10000, velocity=235, tau=1, beta=0.948, wing_load=wingload[i]).cruise()
 
-        # b = ConstrainsAnalysis(altitude=0, velocity=78/2, tau=1, beta=0.97, wing_load=wingload[i]).horizontal_acceleration(0, 78, 30)
 
     plt.figure(figsize=(8, 6))
     plt.plot(wingload, take_off, linewidth=1.5, label='take off')
     plt.plot(wingload, landing, linewidth=1.5, label='landing')
     plt.plot(wingload, l, linewidth=1.5, label='cruise')
-    plt.plot(wingload, j, linewidth=1.5, label='j-AClimb')
+    # plt.plot(wingload, j, linewidth=1.5, label='j-AClimb')
     # plt.plot(wingload, b, 'g-', linewidth=1.5, label='turn')
     plt.plot(wingload, e, linewidth=1.5, label='e-AClimb')
     plt.plot(stall_speed, np.linspace(0, 250, nn), linewidth=1.5, label='stall')
     plt.xlabel('Wing Load: $W_{TO}$/S (N/${m^2}$)')
     plt.ylabel('Power-to-Load: $P_{SL}$/$W_{TO}$ (W/N)')
-    plt.title('Constraint Analysis')
+    plt.title('Constraint Analysis with PD')
     plt.legend(loc=0)
     plt.grid()
     plt.show()
