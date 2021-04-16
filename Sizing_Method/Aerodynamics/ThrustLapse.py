@@ -14,19 +14,16 @@ class thrust_lapse_calculation:
 
     1. The following algebraic equations for installed engine thrust lapse
         are based on the expected performance of advanced engines
-    2.
     """
 
     def __init__(self, altitude, velocity):
         """
 
-        :input v (m/s): velocity
-               h (m): altitude
-               AR: wing aspect ratio, normally between 7 and 10
+        :input h (m): altitude
+               v (m/s): velocity
 
-        :output K1: 2nd Order Coefficient for Cd
-                K2: 1st Order Coefficient for Cd
-                CD_0: drag coefficient at zero lift
+
+        :output thrust_lapse (alpha): thrust lapse ratio
         """
 
         self.h = altitude

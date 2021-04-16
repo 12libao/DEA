@@ -42,7 +42,7 @@ class Aero_propulsion:
     """Estimation of ΔCL and ΔCD"""
 
     def __init__(self, altitude, velocity, Hp, n, P_W, W_S, sweep_angle=25.0,
-                 S=124.0, b=35.8, delta_b=0.5, delta_Dp=0.1, xp=0.5, beta=0.6, AOA_p=0.0, Cf=0.009):
+                 S=124.0, b=35.8, delta_b=0.5, delta_Dp=0.1, xp=0.5, beta=0.8, AOA_p=0.0, Cf=0.009):
         """
 
         :param Hp: P_motor/P_total
@@ -90,10 +90,11 @@ class Aero_propulsion:
         # thrust coefficient Tc of the DP propulsion
         # reference 1: Equation 24
         tc = 1 / self.n * Hp * self.t_w / (self.rho * self.v ** 2 * dp2w)
+        print(tc)
+        #tc = 0.611  # check whether the model is accurate
 
         # axial induction factor at the propeller disk (ap) as a
-        # function of the propeller thrust coefficient,
-        # from the actuator disk theory:
+        # function of the propeller thrust coefficient, from the actuator disk theory:
         # reference 1: Equation 25
         ap = 0.5 * ((1 + 8 / np.pi * tc) ** 0.5 - 1)
 
@@ -108,16 +109,19 @@ class Aero_propulsion:
 
         self.m = Mach.mach(self.h, self.v).mach_number()  # Mach number
         # geometric angle of attack of the wing, where assume cl=1
-        self.aoa_w = (1 / (2 * np.pi * self.ar)) * (2 + (self.ar ** 2 * (1 - self.m ** 2) * (1 + (np.tan(self.sp)) ** 2 / (1 - self.m ** 2)) + 4) ** 0.5)
+        # self.aoa_w = (1 / (2 * np.pi * self.ar)) * (2 + (self.ar ** 2 * (1 - self.m ** 2) * (1 + (np.tan(self.sp)) ** 2 / (1 - self.m ** 2)) + 4) ** 0.5)
 
-    def delta_lift_coefficient(self):
+        # self.aoa_w = -2 * np.pi / 180  # check whether the model is accurate
+
+    def delta_lift_coefficient(self, CL):
         """estimate the lift coefficient changes because of the population distribution"""
+        self.aoa_w = (CL / (2 * np.pi * self.ar)) * (2 + (
+                    self.ar ** 2 * (1 - self.m ** 2) * (1 + (np.tan(self.sp)) ** 2 / (1 - self.m ** 2)) + 4) ** 0.5)
 
         delta_cl = 2 * np.pi * ((np.sin(self.aoa_w) - self.aw * self.beta * np.sin(self.aoa_p - self.aoa_w))
                                 * ((self.aw * self.beta) ** 2 + 2 * self.aw * self.beta * np.cos(self.aoa_p) + 1) ** 0.5
                                 - np.sin(self.aoa_w))
         delta_cl_total = delta_cl * self.delta_y1
-        print(delta_cl_total)
         return delta_cl_total
 
     def delta_CD_0(self):
@@ -131,7 +135,6 @@ class Aero_propulsion:
 
         e = (0.75 + 0.85) / 2  # wing planform efficiency factor is between 0.75 and 0.85, no more than 1
         delta_cl = Aero_propulsion.delta_lift_coefficient(self)
-
         delta_cdi = (delta_cl ** 2 + 2 * CL * delta_cl) / (np.pi * self.ar * e)
 
         return delta_cdi
@@ -144,7 +147,7 @@ class Aero_propulsion:
         K_apo2 = ad.lift_drag_polar(velocity=self.v, altitude=self.h).K_apo2()
 
         CL_min = (0.1 + 0.3) / 2  # Assume constant: for most large cargo and passenger, 0.1 < Cl_min < 0.3
-        delta_cl = Aero_propulsion.delta_lift_coefficient(self)
+        delta_cl = Aero_propulsion.delta_lift_coefficient(self, CL)
         delta_cd0 = Aero_propulsion.delta_CD_0(self)
         CD = K1 * (CL + delta_cl) ** 2 + K2 * (CL + delta_cl) + (CD_0 + delta_cd0)
 
@@ -157,7 +160,7 @@ class Aero_propulsion:
 
 
 if __name__ == '__main__':
-    input_list = [[10, 20], [1000, 100], [12000, 250]]
+    input_list = [[0, 62], [3000, 150], [12000, 250]]
     n = len(input_list)
     velocity, altitude = [], []
     for i, element in enumerate(input_list):
@@ -171,11 +174,11 @@ if __name__ == '__main__':
     CD = np.zeros((2 * n, nn))
 
     for i, element in enumerate(input_list):
-        prob = Aero_propulsion(altitude=element[0], velocity=element[1], Hp=0.5, n=12, P_W=0.3 * element[1], W_S=500)
+        prob = Aero_propulsion(altitude=element[0], velocity=element[1], Hp=0.5, n=12, P_W=0.3 * element[1], W_S=5600)
         prob2 = ad.lift_drag_polar(altitude=element[0], velocity=element[1])
         for j in range(nn):
-            CD[i, j], _, _, _ = prob.lift_drag_polar_equation(CL[j])
-            CD[i + n, j], _, _, _ = prob2.lift_drag_polar_equation(CL[j])
+            CD[i, j], _, _, _ = prob.lift_drag_polar_equation(CL=CL[j])
+            CD[i + n, j], _, _, _ = prob2.lift_drag_polar_equation(CL=CL[j])
 
     plt.figure(figsize=(8, 6))
     plt.plot(CD[0, :], CL, 'b-', linewidth=1.5, label='Takeoff with DP')
@@ -201,7 +204,7 @@ if __name__ == '__main__':
     width = 0.3  # the width of the bars: can also be len(x) sequence
     CL_h = [2, 1.2, 0.6]  # takeoff Cl= Cl_max for takeoff
     for i, element in enumerate(input_list):
-        prob = Aero_propulsion(altitude=element[0], velocity=element[1], Hp=0.5, n=12, P_W=0.3 * element[1], W_S=500)
+        prob = Aero_propulsion(altitude=element[0], velocity=element[1], Hp=0.5, n=12, P_W=0.3 * element[1], W_S=5600)
         prob2 = ad.lift_drag_polar(altitude=element[0], velocity=element[1])
         _, inviscid_drag[i], viscous_drag[i], parasite_drag[i] = prob.lift_drag_polar_equation(CL=CL_h[i])
         _, inviscid_drag2[i], viscous_drag2[i], parasite_drag2[i] = prob2.lift_drag_polar_equation(CL=CL_h[i])
@@ -225,4 +228,34 @@ if __name__ == '__main__':
     plt.xticks(ind, ('Takeoff', 'Climb', 'Cruise'))
     plt.yticks(np.arange(0, 2, 20))
     plt.legend(loc=0)
+    plt.show()
+
+    CL = np.linspace(1.5, 2.7, 20)
+    v = 62.0
+    h = 0.0
+
+    prob = Aero_propulsion(altitude=h, velocity=v, Hp=0.5, n=12, P_W=0.3 * v, W_S=5600, delta_b=0.64)
+    K1 = ad.lift_drag_polar(velocity=v, altitude=h).K1()
+    K2 = ad.lift_drag_polar(velocity=v, altitude=h).K2()
+    CD_0 = ad.lift_drag_polar(velocity=v, altitude=h).CD_0()
+
+    delta_cd0 = prob.delta_CD_0()
+
+    delta_cl = np.zeros(len(CL))
+    delta_cd = np.zeros(len(CL))
+
+    for i in range(len(CL)):
+        delta_cl[i] = prob.delta_lift_coefficient(CL=CL[i])
+        CD1 = K1 * (CL[i] + delta_cl[i]) ** 2 + K2 * (CL[i] + delta_cl[i]) + (CD_0 + delta_cd0)
+        CD2 = K1 * CL[i] ** 2 + K2 * CL[i] + CD_0
+        delta_cd[i] = CD1-CD2+delta_cd0
+
+    plt.figure(figsize=(8, 6))
+    plt.plot(CL, delta_cl, 'b-', linewidth=1.5, label='delta $C_{L}$')
+    plt.plot(CL, delta_cd, 'k-', linewidth=1.5, label='delta $C_{D}$')
+    plt.xlabel('Airframe lift coefficient $C_{L}$')
+    plt.ylabel('Lift or drag coefficient increase $C_{L}$, $C_{D}$')
+    plt.title('Distributed Propulsion $T_{c}$=0.611')
+    plt.legend(loc=0)
+    plt.grid()
     plt.show()

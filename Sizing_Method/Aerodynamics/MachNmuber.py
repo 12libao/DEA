@@ -9,6 +9,13 @@ class mach:
     """Mach Number"""
 
     def __init__(self, altitude, velocity):
+        """
+
+        :input h (m): altitude
+               v (m/s): velocity
+
+        :output a: Mach number
+        """
         self.h = altitude
         self.v = velocity
         self.atoms = atm.atmosphere(self.h)

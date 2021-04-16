@@ -19,11 +19,11 @@ class lift_drag_polar:
         where we use A320neo as the baseline.
     """
 
-    def __init__(self, velocity, altitude, AR=10.3):
+    def __init__(self, altitude, velocity,  AR=10.3):
         """
 
-        :input v (m/s): velocity
-               h (m): altitude
+        :input h (m): altitude
+               v (m/s): velocity
                AR: wing aspect ratio, normally between 7 and 10
 
         :output K1: 2nd Order Coefficient for Cd
@@ -42,7 +42,7 @@ class lift_drag_polar:
         if self.a > 0.85:
             print("The Mach number is larger than 0.85, something going wrong!")
 
-        self.CL_min = (0.1 + 0.3) / 2  # Assume constant: for most large cargo and passenger, 0.1 < Cl_min < 0.3
+        self.CL_min = 0.1  # Assume constant: for most large cargo and passenger, 0.1 < Cl_min < 0.3
         self.CD_min = 0.018  # Assume constant: From Mattingly Figure 2.9
 
     def K_apo1(self):
@@ -68,6 +68,9 @@ class lift_drag_polar:
 
         slop = (K_apo2_max - K_apo2_min) / (a_max - a_min)
         K_apo2 = K_apo2_max - ((a_max - self.a) * slop)
+        # K_apo2 = 0.03*self.a**0.5
+        # K_apo2 = 0.015*np.log(self.a)+0.03
+        # K_apo2 = 0.0345*self.a**0.25-0.005
         return K_apo2
 
     def K1(self):
@@ -98,7 +101,7 @@ class lift_drag_polar:
 
 if __name__ == '__main__':
     AR = 10.3
-    input_list = [[10, 20], [1000, 100], [12000, 250]]
+    input_list = [[10, 70], [3000, 150], [10000, 250]]
     n = len(input_list)
     velocity, altitude = [], []
     for i, element in enumerate(input_list):
@@ -106,8 +109,8 @@ if __name__ == '__main__':
         velocity.append(element[1])
 
     nn = 100
-    # CL = np.linspace(0.0, 1.0, nn)
-    CL = np.linspace(0.0, 0.25, nn)
+    CL = np.linspace(0.0, 1.2, nn)
+    # CL = np.linspace(0.0, 0.25, nn)
 
     CD = np.zeros((n, nn))
 
@@ -133,14 +136,18 @@ if __name__ == '__main__':
     viscous_drag = np.zeros(n)
     parasite_drag = np.zeros(n)
     lift_drag = np.zeros(n)
+    CD = np.zeros(n)
 
     ind = np.arange(n)  # the x locations for the groups
     width = 0.6  # the width of the bars: can also be len(x) sequence
     CL_h = [2, 1.2, 0.6]  # takeoff Cl= Cl_max for takeoff
     for i, element in enumerate(input_list):
         prob = lift_drag_polar(velocity=element[1], altitude=element[0], AR=AR)
-        _, inviscid_drag[i], viscous_drag[i], parasite_drag[i] = prob.lift_drag_polar_equation(CL=CL_h[i])
+        CD[i], inviscid_drag[i], viscous_drag[i], parasite_drag[i] = prob.lift_drag_polar_equation(CL=CL_h[i])
         lift_drag[i] = inviscid_drag[i] + viscous_drag[i]
+
+    # print("CD",CD)
+    # print("CD0", parasite_drag)
 
     p1 = plt.bar(ind, inviscid_drag, width)
     p2 = plt.bar(ind, viscous_drag, width, bottom=inviscid_drag)
