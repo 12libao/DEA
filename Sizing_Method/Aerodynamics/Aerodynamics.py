@@ -33,7 +33,10 @@ class aerodynamics_without_pd:
 
         self.v = velocity
         self.h = altitude
-        self.AR = AR
+
+        h = 2.43  # height of winglets
+        b = 35.8
+        self.AR = AR * (1 + 1.9 * h / b)  # equation 9-88, If the wing has winglets the aspect ratio should be corrected
 
         # Mach number based on different altitude
         # The Mach number is between 0 to 0.82
@@ -43,9 +46,9 @@ class aerodynamics_without_pd:
             print("The Mach number is larger than 0.82, something going wrong!")
 
         self.CL_min = 0.1  # Assume constant: for most large cargo and passenger, 0.1 < Cl_min < 0.3
-        self.CD_min = 0.018  # Assume constant: From Mattingly Figure 2.9
+        self.CD_min = 0.02  # Assume constant: From Mattingly Figure 2.9
 
-        e = (0.75 + 0.85) / 2  # wing planform efficiency factor is between 0.75 and 0.85, no more than 1
+        e = 0.75  # wing planform efficiency factor is between 0.75 and 0.85, no more than 1
         self.K_apo1 = 1 / (np.pi * self.AR * e)  # self.K_apo1 = 1 / (np.pi * self.AR * e)  #
 
         # K_apo2 is between 0.001 to 0.03 for most large cargo and passenger aircraft

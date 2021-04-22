@@ -168,7 +168,7 @@ if __name__ == '__main__':
         velocity.append(element[1])
 
     nn = 100
-    CL = np.linspace(0.0, 1.0, nn)
+    CL = np.linspace(0.0, 2.3, nn)
     # CL = np.linspace(0.0, 0.25, nn)
 
     CD = np.zeros((2 * n, nn))

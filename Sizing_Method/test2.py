@@ -2,6 +2,7 @@
 # Georgia Institute of Technology #
 import numpy as np
 import Sizing_Method.Other.US_Standard_Atmosphere_1976 as atm
+import Sizing_Method.Aerodynamics.ThrustLapse as thrust_lapse
 
 
 a = np.linspace(1, 10, 100)
@@ -36,7 +37,51 @@ b = [1, 2, 3, 4, 5, 6, 7]
 b = np.append(b, 1)
 # print(b)
 
-h = 0
-a = 0.24
+h = 5000
+a = 0.65
 v = a * atm.atmosphere(h).sound_speed()
 print(v)
+
+
+thrust_lapse1 = thrust_lapse.thrust_lapse_calculation(altitude=2438, velocity=77).high_bypass_ratio_turbofan()
+print(thrust_lapse1)
+
+
+load_factor = (1 + ((3 * np.pi / 180) * 235 / 9.80665) ** 2) ** 0.5
+print(load_factor)
+
+a = 1.78*(1-0.045*10.3**0.68) - 0.64
+print(a)
+
+constrains = np.array([[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]])
+
+print(constrains.shape[0])
+
+
+class F:
+    def __init__(self, a):
+        self.a = a
+
+    def f1(self,b):
+        return (self.a * 1+b)
+
+    def f2(self, b):
+        return (self.a * 2+b)
+
+    def f3(self,b):
+        return (self.a * 3+b)
+
+    allFuncs = [f1, f2, f3]
+
+def main():
+    a = 10
+    myF = F(a)
+
+    for f in myF.allFuncs:
+        #print(f(myF))
+        print(myF.allFuncs[1](myF, b=1))
+
+main()
+
+a = [1,2,3,4,5]
+print(a[-1])

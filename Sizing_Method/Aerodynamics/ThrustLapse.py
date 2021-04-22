@@ -4,7 +4,8 @@
 
 1. Mattingly, Jack D., William H. Heiser, and David T. Pratt. Aircraft engine design. American Institute of Aeronautics and Astronautics, 2002.
 """
-
+import numpy as np
+import matplotlib.pylab as plt
 import Sizing_Method.Other.US_Standard_Atmosphere_1976 as atm
 import Sizing_Method.Aerodynamics.MachNmuber as Mach
 
@@ -36,7 +37,7 @@ class thrust_lapse_calculation:
         self.theta = self.atoms.dimensionless_static_temperature()  # dimensionless static temperature
         self.delta = self.atoms.dimensionless_static_pressure()  # dimensionless static pressure
 
-        self.theta_0_break = 1.0  # The Theta Break: assume = 1.0 (from reference 1: Mattingly)
+        self.theta_0_break = 1.072  # The Theta Break: assume = 1.0 (from reference 1: Mattingly)
         self.TR = self.theta_0_break  # The Throttle Ratio (from Equation D.6 reference 1: Mattingly)
 
         self.theta_0 = self.theta * (1 + 0.5 * (self.gamma - 1) * self.M ** 2)
@@ -57,6 +58,29 @@ class thrust_lapse_calculation:
 
 
 if __name__ == '__main__':
-    thrust_lapse1 = thrust_lapse_calculation(altitude=10, velocity=10).high_bypass_ratio_turbofan()  # the case for takeoff
-    thrust_lapse2 = thrust_lapse_calculation(altitude=10000, velocity=250).high_bypass_ratio_turbofan()  # the case for cruise
-    print(thrust_lapse1, thrust_lapse2)
+    nn = 100
+    h = [0, 500, 3000, 6000, 9000, 12000]
+    v = np.linspace(0, 340, nn)
+    m = np.zeros([len(h), nn])
+    thrust_lapse = np.zeros([len(h), nn])
+
+    for i in range(len(h)):
+        for j in range(nn):
+            m[i, j] = Mach.mach(h[i], v[j]).mach_number()
+            thrust_lapse[i, j] = thrust_lapse_calculation(h[i], v[j]).high_bypass_ratio_turbofan()
+
+    plt.figure(figsize=(8, 6))
+
+    for i in range(len(h)):
+        plt.plot(m[i, :], thrust_lapse[i, :], label=h[i])
+
+    plt.xlabel('Mach Number')
+    plt.ylabel('Thrust Ratio, T/$T_{SL}$')
+    plt.title('High Bypass Turbofan Thrust Ratio versus Mach Number \n'
+              'Throttle Ratio = 1.072, ISA. \n'
+              'Altitude unit: meter')
+    plt.xlim(0, 1)
+    plt.ylim(0, 1.2)
+    plt.legend(loc=0)
+    plt.grid()
+    plt.show()

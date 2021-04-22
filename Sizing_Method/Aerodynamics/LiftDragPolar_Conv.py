@@ -33,7 +33,10 @@ class lift_drag_polar:
 
         self.v = velocity
         self.h = altitude
-        self.AR = AR
+
+        h = 2.43  # height of winglets
+        b = 35.8
+        self.AR = AR * (1 + 1.9 * h / b)  # equation 9-88, If the wing has winglets the aspect ratio should be corrected
 
         # Mach number based on different altitude
         # The Mach number is between 0 to 0.82
@@ -109,7 +112,7 @@ if __name__ == '__main__':
         velocity.append(element[1])
 
     nn = 100
-    CL = np.linspace(0.0, 1.2, nn)
+    CL = np.linspace(0.0, 2.3, nn)
     # CL = np.linspace(0.0, 0.25, nn)
 
     CD = np.zeros((n, nn))
