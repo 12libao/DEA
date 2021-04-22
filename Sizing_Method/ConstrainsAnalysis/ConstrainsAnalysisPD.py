@@ -11,15 +11,16 @@ import Sizing_Method.Aerodynamics.Aerodynamics as ad
 The unit use is IS standard
 """
 
-
-class ConstrainsAnalysis_Mattingly_Method:
+class ConstrainsAnalysis_Mattingly_Method_with_DP:
     """This is a power-based master constraints analysis"""
 
-    def __init__(self, altitude, velocity, beta, wing_load, tau=1, C_DR=0):
+    def __init__(self, altitude, velocity, beta, wing_load, Hp=0.5, number_of_motor=12, tau=1, C_DR=0):
         """
 
         :param tau: power fraction of i_th power path
         :param beta: weight fraction
+        :param Hp: P_motor/P_total
+        :param n: number of motor
         :param K1: drag polar coefficient for 2nd order term
         :param K2: drag polar coefficient for 1st order term
         :param C_D0: the drag coefficient at zero lift
@@ -36,39 +37,43 @@ class ConstrainsAnalysis_Mattingly_Method:
 
         self.tau = tau
         self.beta = beta
+        self.hp = Hp
+        self.n = number_of_motor
 
         # power lapse ratio
         self.alpha = thrust_lapse.thrust_lapse_calculation(altitude=self.h,
                                                            velocity=self.v).high_bypass_ratio_turbofan()
 
-        self.K1 = ad.aerodynamics_without_pd(self.h, self.v).K1()
-        self.K2 = ad.aerodynamics_without_pd(self.h, self.v).K2()
-        self.C_D0 = ad.aerodynamics_without_pd(self.h, self.v).CD_0()
-        self.C_DR = C_DR
+        self.k1 = ad.aerodynamics_without_pd(self.h, self.v).K1()
+        self.k2 = ad.aerodynamics_without_pd(self.h, self.v).K2()
+        self.cd0 = ad.aerodynamics_without_pd(self.h, self.v).CD_0()
+        self.cdr = C_DR
 
-        self.W_S = wing_load
+        self.w_s = wing_load
         self.g0 = 9.80665
 
-        self.coeff = self.tau * self.beta / self.alpha
+        self.coefficient = self.tau * self.beta * self.v / self.alpha
+
+        # Estimation of ΔCL and ΔCD
+        pd = ad.aerodynamics_with_pd(self.h, self.v, Hp=0.5, n=n, W_S=self.w_s)
+        self.q = 0.5 * self.rho * self.v ** 2
+        self.cl = self.beta * self.w_s / self.q
+        self.delta_cl = pd.delta_lift_coefficient(self.cl)
+        self.delta_cd0 = pd.delta_CD_0()
 
     def master_equation(self, n, dh_dt, dV_dt):
-        q = 0.5 * self.rho * self.v ** 2
-
-        linear_term = self.K1 * n ** 2 * self.beta / q
-        inverse_term = (self.C_D0 + self.C_DR) * q / self.beta
-        constant_term = self.K2 * n + dh_dt / self.v + dV_dt / self.g0
-        # print(linear_term,'\n', inverse_term, '\n', constant_term)
-
-        P_WTO = self.coeff * (linear_term * self.W_S + inverse_term / self.W_S + constant_term) * self.v
-        return P_WTO
+        cl = self.cl*n + self.delta_cl
+        cd = self.k1 * cl ** 2 + self.k2 * cl + self.cd0 + self.cdr + self.delta_cd0
+        p_w = self.coefficient * (self.q / (self.beta * self.w_s) * cd + dh_dt / self.v + dV_dt / self.g0)
+        return p_w
 
     def cruise(self):
-        P_WTO = ConstrainsAnalysis_Mattingly_Method.master_equation(self, n=1, dh_dt=0, dV_dt=0)
-        return P_WTO
+        p_w = ConstrainsAnalysis_Mattingly_Method_with_DP.master_equation(self, n=1, dh_dt=0, dV_dt=0)
+        return p_w
 
     def climb(self, roc):
-        P_WTO = ConstrainsAnalysis_Mattingly_Method.master_equation(self, n=1, dh_dt=roc, dV_dt=0)
-        return P_WTO
+        p_w = ConstrainsAnalysis_Mattingly_Method_with_DP.master_equation(self, n=1, dh_dt=roc, dV_dt=0)
+        return p_w
 
     def level_turn(self, turn_rate=3, v=100):
         """
@@ -76,17 +81,8 @@ class ConstrainsAnalysis_Mattingly_Method:
         assume turn at 300 knots, which is about 150 m/s
         """
         load_factor = (1 + ((turn_rate * np.pi / 180) * v / self.g0) ** 2) ** 0.5
-        P_WTO = ConstrainsAnalysis_Mattingly_Method.master_equation(self, n=load_factor, dh_dt=0, dV_dt=0)
-        return P_WTO
-
-    def horizontal_acceleration(self, v_initial, v_final, delta_t):
-        dv_dt = (v_final - v_initial) / delta_t
-
-        if dv_dt <= 0:
-            print("it is no acceleration")
-
-        P_WTO = ConstrainsAnalysis_Mattingly_Method.master_equation(self, n=1, dh_dt=0, dV_dt=dv_dt)
-        return P_WTO
+        p_w = ConstrainsAnalysis_Mattingly_Method_with_DP.master_equation(self, n=load_factor, dh_dt=0, dV_dt=0)
+        return p_w
 
     def take_off(self):
         """
@@ -97,34 +93,32 @@ class ConstrainsAnalysis_Mattingly_Method:
         Cl_max_to = 2.3  # 2.3
         K_TO = 1.2  # V_TO / V_stall
         s_G = 1266
-        P_WTO = 2 / 3 * self.coeff * self.beta * K_TO ** 2 / (s_G * self.rho * self.g0 * Cl_max_to) * self.W_S ** (
+        p_w = 2 / 3 * self.coefficient/self.v * self.beta * K_TO ** 2 / (s_G * self.rho * self.g0 * Cl_max_to) * self.w_s ** (
                 3 / 2)
-        return P_WTO
+        return p_w
 
-    def stall_speed(self):
-        V_stall_to = 65
+    def stall_speed(self, V_stall_to=65, Cl_max_to=2.3):
         V_stall_ld = 62
 
-        Cl_max_to = 2.3
         Cl_max_ld = 2.87
 
-        W_S_1 = 1 / 2 * self.rho * V_stall_to ** 2 * Cl_max_to
-        W_S_2 = 1 / 2 * self.rho * V_stall_ld ** 2 * Cl_max_ld
+        W_S_1 = 1 / 2 * self.rho * V_stall_to ** 2 * (Cl_max_to + self.delta_cl)
+        W_S_2 = 1 / 2 * self.rho * V_stall_ld ** 2 * (Cl_max_ld + self.delta_cl)
 
         W_S = min(W_S_1, W_S_2)
         return W_S
 
     def service_ceiling(self, roc=0.5):
-        P_WTO = ConstrainsAnalysis_Mattingly_Method.master_equation(self, n=1, dh_dt=roc, dV_dt=0)
-        return P_WTO
+        p_w = ConstrainsAnalysis_Mattingly_Method_with_DP.master_equation(self, n=1, dh_dt=roc, dV_dt=0)
+        return p_w
 
     allFuncs = [take_off, stall_speed, cruise, service_ceiling, level_turn, climb]
 
 
-class ConstrainsAnalysis_Gudmundsson_Method:
+class ConstrainsAnalysis_Gudmundsson_Method_with_DP:
     """This is a power-based master constraints analysis based on Gudmundsson_method"""
 
-    def __init__(self, altitude, velocity, beta, wing_load, tau=1, e=0.75, AR=10.3):
+    def __init__(self, altitude, velocity, beta, wing_load, Hp=0.5, number_of_motor=12,tau=1, e=0.75, AR=10.3):
         """
 
         :param tau: power fraction of i_th power path
@@ -143,8 +137,11 @@ class ConstrainsAnalysis_Gudmundsson_Method:
         self.w_s = wing_load
         self.g0 = 9.80665
 
+        self.beta = beta
+        self.hp = Hp
+        self.n = number_of_motor
+
         self.rho = atm.atmosphere(geometric_altitude=self.h).density()
-        self.q = 0.5 * self.rho * self.v ** 2
 
         # power lapse ratio
         self.alpha = thrust_lapse.thrust_lapse_calculation(altitude=self.h,
@@ -155,21 +152,34 @@ class ConstrainsAnalysis_Gudmundsson_Method:
         self.k = 1 / (np.pi * ar_corr * e)
         self.coefficient = self.tau * self.beta * self.v / self.alpha
 
+        # Estimation of ΔCL and ΔCD
+        pd = ad.aerodynamics_with_pd(self.h, self.v, Hp=0.5, n=n, W_S=self.w_s)
+        self.q = 0.5 * self.rho * self.v ** 2
+        cl = self.beta * self.w_s / self.q
+        self.delta_cl = pd.delta_lift_coefficient(cl)
+        self.delta_cd0 = pd.delta_CD_0()
+
         # TABLE 3-1 Typical Aerodynamic Characteristics of Selected Classes of Aircraft
-        self.cd_min = 0.02
-        self.cd_to = 0.03
-        self.cl_to = 0.8
+        cd_min = 0.02
+        cd_to = 0.03
+        cl_to = 0.8
 
         self.v_to = 68
         self.s_g = 1480
         self.mu = 0.04
 
+        self.cd_min = cd_min + self.delta_cd0
+        self.cl = cl + self.delta_cl
+
+        self.cd_to = cd_to + self.delta_cd0
+        self.cl_to = cl_to + self.delta_cl
+
     def cruise(self):
-        p_w = self.q * self.cd_min / self.w_s + self.k / self.q * self.w_s
+        p_w = self.q * self.cd_min / self.w_s + self.k *self.cl
         return p_w * self.coefficient
 
     def climb(self, roc):
-        p_w = roc / self.v + self.q * self.cd_min / self.w_s + self.k / self.q * self.w_s
+        p_w = roc / self.v + self.q * self.cd_min / self.w_s + self.k *self.cl
         return p_w * self.coefficient
 
     def level_turn(self, turn_rate=3, v=100):
@@ -179,7 +189,7 @@ class ConstrainsAnalysis_Gudmundsson_Method:
         """
         load_factor = (1 + ((turn_rate * np.pi / 180) * v / self.g0) ** 2) ** 0.5
         q = 0.5 * self.rho * v ** 2
-        p_w = q * (self.cd_min / self.w_s + self.k * (load_factor / q) ** 2 * self.w_s)
+        p_w = q / self.w_s * (self.cd_min + self.k * (load_factor / q*self.w_s + self.delta_cl) ** 2)
         return p_w * self.coefficient
 
     def take_off(self):
@@ -198,8 +208,8 @@ class ConstrainsAnalysis_Gudmundsson_Method:
 
         Cl_max_ld = 2.87
 
-        W_S_1 = 1 / 2 * self.rho * V_stall_to ** 2 * Cl_max_to
-        W_S_2 = 1 / 2 * self.rho * V_stall_ld ** 2 * Cl_max_ld
+        W_S_1 = 1 / 2 * self.rho * V_stall_to ** 2 * (Cl_max_to+ self.delta_cl)
+        W_S_2 = 1 / 2 * self.rho * V_stall_ld ** 2 * (Cl_max_ld+ self.delta_cl)
 
         W_S = min(W_S_1, W_S_2)
         return W_S
@@ -225,8 +235,8 @@ if __name__ == "__main__":
             h = constrains[i, 0]
             v = constrains[i, 1]
             beta = constrains[i, 2]
-            problem1 = ConstrainsAnalysis_Gudmundsson_Method(h, v, beta, w_s[j])
-            problem2 = ConstrainsAnalysis_Mattingly_Method(h, v, beta, w_s[j])
+            problem1 = ConstrainsAnalysis_Gudmundsson_Method_with_DP(h, v, beta, w_s[j])
+            problem2 = ConstrainsAnalysis_Mattingly_Method_with_DP(h, v, beta, w_s[j])
 
             if i >= 5:
                 p_w[i, j] = problem1.allFuncs[-1](problem1, roc=15 - 5 * (i - 5))
@@ -245,7 +255,7 @@ if __name__ == "__main__":
 
     plt.xlabel('Wing Load: $W_{TO}$/S (N/${m^2}$)')
     plt.ylabel('Power-to-Load: $P_{SL}$/$W_{TO}$ (W/N)')
-    plt.title('Constraint Analysis')
+    plt.title('Constraint Analysis-Normalized to Sea Level')
     plt.legend(bbox_to_anchor=(1.002, 1), loc="upper left")
     plt.gca().add_artist(l1)
     plt.xlim(100, 9000)

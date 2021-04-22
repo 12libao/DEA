@@ -79,15 +79,6 @@ class ConstrainsAnalysis_Mattingly_Method:
         P_WTO = ConstrainsAnalysis_Mattingly_Method.master_equation(self, n=load_factor, dh_dt=0, dV_dt=0)
         return P_WTO
 
-    def horizontal_acceleration(self, v_initial, v_final, delta_t):
-        dv_dt = (v_final - v_initial) / delta_t
-
-        if dv_dt <= 0:
-            print("it is no acceleration")
-
-        P_WTO = ConstrainsAnalysis_Mattingly_Method.master_equation(self, n=1, dh_dt=0, dV_dt=dv_dt)
-        return P_WTO
-
     def take_off(self):
         """
         A320neo take-off speed is about 150 knots, which is about 75 m/s

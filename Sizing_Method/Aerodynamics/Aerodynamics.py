@@ -82,7 +82,7 @@ class aerodynamics_without_pd:
 class aerodynamics_with_pd:
     """Estimation of ΔCL and ΔCD"""
 
-    def __init__(self, altitude, velocity, Hp, n, P_W, W_S, sweep_angle=25.0,
+    def __init__(self, altitude, velocity, Hp, n, W_S, P_W=90, sweep_angle=25.0,
                  S=124.0, b=35.8, delta_b=0.5, delta_Dp=0.1, xp=0.5, beta=0.8, AOA_p=0.0, Cf=0.009):
         """
 
@@ -156,8 +156,8 @@ class aerodynamics_with_pd:
         delta_cl = 2 * np.pi * ((np.sin(aoa_w) - self.aw * self.beta * np.sin(self.aoa_p - aoa_w))
                                 * ((self.aw * self.beta) ** 2 + 2 * self.aw * self.beta * np.cos(self.aoa_p) + 1) ** 0.5
                                 - np.sin(aoa_w))
-        delta_cl_total = delta_cl * self.delta_y1
-        return delta_cl_total
+        delta_cl = delta_cl * self.delta_y1
+        return delta_cl
 
     def delta_CD_0(self):
         """estimate the zero lift drag coefficient changes because of the population distribution"""
