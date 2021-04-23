@@ -180,8 +180,24 @@ class ConstrainsAnalysis_Gudmundsson_Method:
         return p_w * self.coefficient
 
     def service_ceiling(self, roc=0.5):
+        """
+        t_w = 0.3
+        s = 124
+        cd_max = 0.04
+
+        l = 0.5 * self.rho * self.v ** 2 * s * self.w_s / self.q
+        d_max = 0.5 * self.rho * self.v ** 2 * s * cd_max
+
+        # eqaution 18-24: Airspeed for Best ROC for a Jet
+        vy = (t_w * self.w_s / (3 * self.rho * self.cd_min) * (1 + (1 + 3 / (l * d_max ** 2 * t_w ** 2)) ** 0.5)) ** 0.5
+
+        q = 0.5 * self.rho * vy ** 2
+
+        p_w = roc / self.v + q / self.w_s * (self.cd_min + self.k * (self.w_s / q) ** 2)
+        """
+
         p_w = roc / (2 / self.rho * self.w_s * (self.k / (3 * self.cd_min)) ** 0.5) ** 0.5 + 4 * (
-                self.k * self.cd_min / 3) ** 0.5
+               self.k * self.cd_min / 3) ** 0.5
         return p_w * self.coefficient
 
     def stall_speed(self, V_stall_to=65, Cl_max_to=2.3):
@@ -301,7 +317,7 @@ if __name__ == "__main__":
     m = constrains.shape[0]
     p_w = np.zeros([2 * m, n])
 
-    plt.figure(figsize=(10, 8))
+    plt.figure(figsize=(12, 8))
     for i in range(m):
         for j in range(n):
             h = constrains[i, 0]
@@ -325,9 +341,16 @@ if __name__ == "__main__":
             plt.plot(w_s, p_w[i, :], color=color[i], label=constrains_name[i])
             plt.plot(w_s, p_w[i + m, :], color=color[i], linestyle='--')
 
+    p_w[1, :] = 10 ** 10 * (w_s - p_w[1, 2])
+
+    p_w[1 + m, :] = 10 ** 10 * (w_s - p_w[1 + m, 2])
+    plt.fill_between(w_s, np.amax(p_w[0:m - 1, :], axis=0), 200, color='b', alpha=0.25,
+                     label='feasible region Gudmundsson')
+    plt.fill_between(w_s, np.amax(p_w[m:2 * m - 1, :], axis=0), 200, color='r', alpha=0.25,
+                     label='feasible region Mattingly')
     plt.xlabel('Wing Load: $W_{TO}$/S (N/${m^2}$)')
     plt.ylabel('Power-to-Load: $P_{SL}$/$W_{TO}$ (W/N)')
-    plt.title('Constraint Analysis-Normalized to Sea Level')
+    plt.title(r'Constraint Analysis: $\bf{without}$ $\bf{DP}$ - Normalized to Sea Level')
     plt.legend(bbox_to_anchor=(1.002, 1), loc="upper left")
     plt.gca().add_artist(l1)
     plt.xlim(100, 9000)

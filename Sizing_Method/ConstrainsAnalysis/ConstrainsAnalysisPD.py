@@ -6,10 +6,13 @@ import matplotlib.pylab as plt
 import Sizing_Method.Other.US_Standard_Atmosphere_1976 as atm
 import Sizing_Method.Aerodynamics.ThrustLapse as thrust_lapse
 import Sizing_Method.Aerodynamics.Aerodynamics as ad
+import Sizing_Method.ConstrainsAnalysis.ConstrainsAnalysis as ca
+
 
 """
 The unit use is IS standard
 """
+
 
 class ConstrainsAnalysis_Mattingly_Method_with_DP:
     """This is a power-based master constraints analysis"""
@@ -55,14 +58,16 @@ class ConstrainsAnalysis_Mattingly_Method_with_DP:
         self.coefficient = self.tau * self.beta * self.v / self.alpha
 
         # Estimation of ΔCL and ΔCD
-        pd = ad.aerodynamics_with_pd(self.h, self.v, Hp=0.5, n=n, W_S=self.w_s)
+        pd = ad.aerodynamics_with_pd(self.h, self.v, Hp=self.hp, n=n, W_S=self.w_s)
         self.q = 0.5 * self.rho * self.v ** 2
         self.cl = self.beta * self.w_s / self.q
+        # print(self.cl)
         self.delta_cl = pd.delta_lift_coefficient(self.cl)
         self.delta_cd0 = pd.delta_CD_0()
 
     def master_equation(self, n, dh_dt, dV_dt):
         cl = self.cl*n + self.delta_cl
+
         cd = self.k1 * cl ** 2 + self.k2 * cl + self.cd0 + self.cdr + self.delta_cd0
         p_w = self.coefficient * (self.q / (self.beta * self.w_s) * cd + dh_dt / self.v + dV_dt / self.g0)
         return p_w
@@ -153,7 +158,7 @@ class ConstrainsAnalysis_Gudmundsson_Method_with_DP:
         self.coefficient = self.tau * self.beta * self.v / self.alpha
 
         # Estimation of ΔCL and ΔCD
-        pd = ad.aerodynamics_with_pd(self.h, self.v, Hp=0.5, n=n, W_S=self.w_s)
+        pd = ad.aerodynamics_with_pd(self.h, self.v, Hp=self.hp, n=n, W_S=self.w_s)
         self.q = 0.5 * self.rho * self.v ** 2
         cl = self.beta * self.w_s / self.q
         self.delta_cl = pd.delta_lift_coefficient(cl)
@@ -175,11 +180,11 @@ class ConstrainsAnalysis_Gudmundsson_Method_with_DP:
         self.cl_to = cl_to + self.delta_cl
 
     def cruise(self):
-        p_w = self.q * self.cd_min / self.w_s + self.k *self.cl
+        p_w = self.q / self.w_s * (self.cd_min + self.k * self.cl**2)
         return p_w * self.coefficient
 
     def climb(self, roc):
-        p_w = roc / self.v + self.q * self.cd_min / self.w_s + self.k *self.cl
+        p_w = roc / self.v + self.q * self.cd_min / self.w_s + self.k * self.cl
         return p_w * self.coefficient
 
     def level_turn(self, turn_rate=3, v=100):
@@ -199,8 +204,11 @@ class ConstrainsAnalysis_Gudmundsson_Method_with_DP:
         return p_w * self.coefficient
 
     def service_ceiling(self, roc=0.5):
-        p_w = roc / (2 / self.rho * self.w_s * (self.k / (3 * self.cd_min)) ** 0.5) ** 0.5 + 4 * (
-                self.k * self.cd_min / 3) ** 0.5
+        vy = (2/self.rho*self.w_s*(self.k/(3*self.cd_min))**0.5)**0.5
+        q = 0.5*self.rho*vy**2
+        p_w = roc/vy + q/self.w_s*(self.cd_min+self.k*(self.w_s/q + self.delta_cl)**2)
+        # p_w = roc / (2 / self.rho * self.w_s * (self.k / (3 * self.cd_min)) ** 0.5) ** 0.5 + 4 * (
+        #         self.k * self.cd_min / 3) ** 0.5
         return p_w * self.coefficient
 
     def stall_speed(self, V_stall_to=65, Cl_max_to=2.3):
@@ -226,40 +234,69 @@ if __name__ == "__main__":
                            [11900, 230, 0.948], [3000, 100, 0.984], [0, 100, 0.984],
                            [3000, 200, 0.975], [7000, 230, 0.96]])
     color = ['c', 'k', 'b', 'g', 'y', 'plum', 'violet', 'm']
+    label = ['feasible region with PD', 'feasible region with PD','feasible region Gudmundsson',
+             'feasible region without PD', 'feasible region without PD', 'feasible region Mattingly']
     m = constrains.shape[0]
     p_w = np.zeros([2 * m, n])
 
-    plt.figure(figsize=(10, 8))
-    for i in range(m):
-        for j in range(n):
-            h = constrains[i, 0]
-            v = constrains[i, 1]
-            beta = constrains[i, 2]
-            problem1 = ConstrainsAnalysis_Gudmundsson_Method_with_DP(h, v, beta, w_s[j])
-            problem2 = ConstrainsAnalysis_Mattingly_Method_with_DP(h, v, beta, w_s[j])
+    for k in range(3):
+        plt.figure(figsize=(12, 8))
+        for i in range(m):
+            for j in range(n):
+                h = constrains[i, 0]
+                v = constrains[i, 1]
+                beta = constrains[i, 2]
 
-            if i >= 5:
-                p_w[i, j] = problem1.allFuncs[-1](problem1, roc=15 - 5 * (i - 5))
-                p_w[i + m, j] = problem2.allFuncs[-1](problem2, roc=15 - 5 * (i - 5))
+                if k == 0:
+                    problem1 = ConstrainsAnalysis_Gudmundsson_Method_with_DP(h, v, beta, w_s[j])
+                    problem2 = ca.ConstrainsAnalysis_Gudmundsson_Method(h, v, beta, w_s[j])
+                    plt.title(r'Constraint Analysis: $\bf{Gudmundsson-Method}$ - Normalized to Sea Level')
+                elif k ==1:
+                    problem1 = ConstrainsAnalysis_Mattingly_Method_with_DP(h, v, beta, w_s[j])
+                    problem2 = ca.ConstrainsAnalysis_Mattingly_Method(h, v, beta, w_s[j])
+                    plt.title(r'Constraint Analysis: $\bf{Mattingly-Method}$ - Normalized to Sea Level')
+                else:
+                    problem1 = ConstrainsAnalysis_Gudmundsson_Method_with_DP(h, v, beta, w_s[j])
+                    problem2 = ConstrainsAnalysis_Mattingly_Method_with_DP(h, v, beta, w_s[j])
+                    plt.title(r'Constraint Analysis: $\bf{with}$ $\bf{DP}$ - Normalized to Sea Level')
+
+                if i >= 5:
+                    p_w[i, j] = problem1.allFuncs[-1](problem1, roc=15 - 5 * (i - 5))
+                    p_w[i + m, j] = problem2.allFuncs[-1](problem2, roc=15 - 5 * (i - 5))
+                else:
+                    p_w[i, j] = problem1.allFuncs[i](problem1)
+                    p_w[i + m, j] = problem2.allFuncs[i](problem2)
+
+            if i == 1:
+                l1a, = plt.plot(p_w[i, :], np.linspace(0, 250, n), color=color[i], label=constrains_name[i])
+                l1b, = plt.plot(p_w[i + m, :], np.linspace(0, 250, n), color=color[i], linestyle='--')
+
+                if k != 2:
+                    l1 = plt.legend([l1a, l1b], ['with DP', 'without DP'], loc="upper right")
+                else:
+                    l1 = plt.legend([l1a, l1b], ['Gudmundsson method', 'Mattingly method'], loc="upper right")
+
             else:
-                p_w[i, j] = problem1.allFuncs[i](problem1)
-                p_w[i + m, j] = problem2.allFuncs[i](problem2)
+                plt.plot(w_s, p_w[i, :], color=color[i], label=constrains_name[i])
+                plt.plot(w_s, p_w[i + m, :], color=color[i], linestyle='--')
 
-        if i == 1:
-            pa, = plt.plot(p_w[i, :], np.linspace(0, 250, n), color=color[i], label=constrains_name[i])
-            pb, = plt.plot(p_w[i + m, :], np.linspace(0, 250, n), color=color[i], linestyle='--')
-            l1 = plt.legend([pa, pb], ['Gudmundsson method', 'Mattingly method'], loc="upper right")
+        p_w[1, :] = 200 / (p_w[1, -1] - p_w[1, 20]) * (w_s - p_w[1, 2])
+
+        if k != 2:
+            p_w[1 + m, :] = 10 ** 10 * (w_s - p_w[1 + m, 2])
         else:
-            plt.plot(w_s, p_w[i, :], color=color[i], label=constrains_name[i])
-            plt.plot(w_s, p_w[i + m, :], color=color[i], linestyle='--')
+            p_w[1 + m, :] = 200 / (p_w[1+m, -1] - p_w[1+m, 20]) * (w_s - p_w[1 + m, 2])
 
-    plt.xlabel('Wing Load: $W_{TO}$/S (N/${m^2}$)')
-    plt.ylabel('Power-to-Load: $P_{SL}$/$W_{TO}$ (W/N)')
-    plt.title('Constraint Analysis-Normalized to Sea Level')
-    plt.legend(bbox_to_anchor=(1.002, 1), loc="upper left")
-    plt.gca().add_artist(l1)
-    plt.xlim(100, 9000)
-    plt.ylim(0, 200)
-    plt.tight_layout()
-    plt.grid()
-    plt.show()
+        plt.fill_between(w_s, np.amax(p_w[0:m - 1, :], axis=0), 200, color='b', alpha=0.25,
+                        label=label[k])
+        plt.fill_between(w_s, np.amax(p_w[m:2 * m - 1, :], axis=0), 200, color='r', alpha=0.25,
+                        label=label[k+3])
+        plt.xlabel('Wing Load: $W_{TO}$/S (N/${m^2}$)')
+        plt.ylabel('Power-to-Load: $P_{SL}$/$W_{TO}$ (W/N)')
+        plt.legend(bbox_to_anchor=(1.002, 1), loc="upper left")
+        plt.gca().add_artist(l1)
+        plt.xlim(100, 9000)
+        plt.ylim(0, 200)
+        plt.tight_layout()
+        plt.grid()
+        plt.show()

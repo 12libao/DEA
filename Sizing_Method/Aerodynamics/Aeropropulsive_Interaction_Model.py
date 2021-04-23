@@ -90,7 +90,17 @@ class Aero_propulsion:
         # thrust coefficient Tc of the DP propulsion
         # reference 1: Equation 24
         tc = 1 / self.n * Hp * self.t_w / (self.rho * self.v ** 2 * dp2w)
+
+        # Actuator disk theory shows that there is a maximum theoretical propulsive efficiency
+        # for a given thrust coefficient
+        ndp_isolated = 0.76
+        tc_max = np.pi / 8 * ((2 / ndp_isolated - 1) ** 2 - 1)
+
+        if tc >= tc_max:
+            tc = tc_max
+
         print(tc)
+
         #tc = 0.611  # check whether the model is accurate
 
         # axial induction factor at the propeller disk (ap) as a
