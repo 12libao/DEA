@@ -101,7 +101,7 @@ class Aero_propulsion:
 
         print(tc)
 
-        #tc = 0.611  # check whether the model is accurate
+        # tc = 0.611  # check whether the model is accurate
 
         # axial induction factor at the propeller disk (ap) as a
         # function of the propeller thrust coefficient, from the actuator disk theory:
@@ -126,7 +126,7 @@ class Aero_propulsion:
     def delta_lift_coefficient(self, CL):
         """estimate the lift coefficient changes because of the population distribution"""
         self.aoa_w = (CL / (2 * np.pi * self.ar)) * (2 + (
-                    self.ar ** 2 * (1 - self.m ** 2) * (1 + (np.tan(self.sp)) ** 2 / (1 - self.m ** 2)) + 4) ** 0.5)
+                self.ar ** 2 * (1 - self.m ** 2) * (1 + (np.tan(self.sp)) ** 2 / (1 - self.m ** 2)) + 4) ** 0.5)
 
         delta_cl = 2 * np.pi * ((np.sin(self.aoa_w) - self.aw * self.beta * np.sin(self.aoa_p - self.aoa_w))
                                 * ((self.aw * self.beta) ** 2 + 2 * self.aw * self.beta * np.cos(self.aoa_p) + 1) ** 0.5
@@ -163,7 +163,7 @@ class Aero_propulsion:
 
         inviscid_drag = K_apo1 * (CL + delta_cl) ** 2
         viscous_drag = K_apo2 * (CL + delta_cl) ** 2 - 2 * K_apo2 * CL_min * (
-                    CL + delta_cl)
+                CL + delta_cl)
         parasite_drag = CD_0 + delta_cd0
 
         return CD, inviscid_drag, viscous_drag, parasite_drag
@@ -258,7 +258,7 @@ if __name__ == '__main__':
         delta_cl[i] = prob.delta_lift_coefficient(CL=CL[i])
         CD1 = K1 * (CL[i] + delta_cl[i]) ** 2 + K2 * (CL[i] + delta_cl[i]) + (CD_0 + delta_cd0)
         CD2 = K1 * CL[i] ** 2 + K2 * CL[i] + CD_0
-        delta_cd[i] = CD1-CD2+delta_cd0
+        delta_cd[i] = CD1 - CD2 + delta_cd0
 
     plt.figure(figsize=(8, 6))
     plt.plot(CL, delta_cl, 'b-', linewidth=1.5, label='delta $C_{L}$')

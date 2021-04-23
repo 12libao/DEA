@@ -8,7 +8,6 @@ import Sizing_Method.Aerodynamics.ThrustLapse as thrust_lapse
 import Sizing_Method.Aerodynamics.Aerodynamics as ad
 import Sizing_Method.ConstrainsAnalysis.ConstrainsAnalysis as ca
 
-
 """
 The unit use is IS standard
 """
@@ -66,7 +65,7 @@ class ConstrainsAnalysis_Mattingly_Method_with_DP:
         self.delta_cd0 = pd.delta_CD_0()
 
     def master_equation(self, n, dh_dt, dV_dt):
-        cl = self.cl*n + self.delta_cl
+        cl = self.cl * n + self.delta_cl
 
         cd = self.k1 * cl ** 2 + self.k2 * cl + self.cd0 + self.cdr + self.delta_cd0
         p_w = self.coefficient * (self.q / (self.beta * self.w_s) * cd + dh_dt / self.v + dV_dt / self.g0)
@@ -98,8 +97,9 @@ class ConstrainsAnalysis_Mattingly_Method_with_DP:
         Cl_max_to = 2.3  # 2.3
         K_TO = 1.2  # V_TO / V_stall
         s_G = 1266
-        p_w = 2 / 3 * self.coefficient/self.v * self.beta * K_TO ** 2 / (s_G * self.rho * self.g0 * Cl_max_to) * self.w_s ** (
-                3 / 2)
+        p_w = 2 / 3 * self.coefficient / self.v * self.beta * K_TO ** 2 / (
+                    s_G * self.rho * self.g0 * Cl_max_to) * self.w_s ** (
+                      3 / 2)
         return p_w
 
     def stall_speed(self, V_stall_to=65, Cl_max_to=2.3):
@@ -123,7 +123,7 @@ class ConstrainsAnalysis_Mattingly_Method_with_DP:
 class ConstrainsAnalysis_Gudmundsson_Method_with_DP:
     """This is a power-based master constraints analysis based on Gudmundsson_method"""
 
-    def __init__(self, altitude, velocity, beta, wing_load, Hp=0.5, number_of_motor=12,tau=1, e=0.75, AR=10.3):
+    def __init__(self, altitude, velocity, beta, wing_load, Hp=0.5, number_of_motor=12, tau=1, e=0.75, AR=10.3):
         """
 
         :param tau: power fraction of i_th power path
@@ -180,7 +180,7 @@ class ConstrainsAnalysis_Gudmundsson_Method_with_DP:
         self.cl_to = cl_to + self.delta_cl
 
     def cruise(self):
-        p_w = self.q / self.w_s * (self.cd_min + self.k * self.cl**2)
+        p_w = self.q / self.w_s * (self.cd_min + self.k * self.cl ** 2)
         return p_w * self.coefficient
 
     def climb(self, roc):
@@ -194,7 +194,7 @@ class ConstrainsAnalysis_Gudmundsson_Method_with_DP:
         """
         load_factor = (1 + ((turn_rate * np.pi / 180) * v / self.g0) ** 2) ** 0.5
         q = 0.5 * self.rho * v ** 2
-        p_w = q / self.w_s * (self.cd_min + self.k * (load_factor / q*self.w_s + self.delta_cl) ** 2)
+        p_w = q / self.w_s * (self.cd_min + self.k * (load_factor / q * self.w_s + self.delta_cl) ** 2)
         return p_w * self.coefficient
 
     def take_off(self):
@@ -204,9 +204,9 @@ class ConstrainsAnalysis_Gudmundsson_Method_with_DP:
         return p_w * self.coefficient
 
     def service_ceiling(self, roc=0.5):
-        vy = (2/self.rho*self.w_s*(self.k/(3*self.cd_min))**0.5)**0.5
-        q = 0.5*self.rho*vy**2
-        p_w = roc/vy + q/self.w_s*(self.cd_min+self.k*(self.w_s/q + self.delta_cl)**2)
+        vy = (2 / self.rho * self.w_s * (self.k / (3 * self.cd_min)) ** 0.5) ** 0.5
+        q = 0.5 * self.rho * vy ** 2
+        p_w = roc / vy + q / self.w_s * (self.cd_min + self.k * (self.w_s / q + self.delta_cl) ** 2)
         # p_w = roc / (2 / self.rho * self.w_s * (self.k / (3 * self.cd_min)) ** 0.5) ** 0.5 + 4 * (
         #         self.k * self.cd_min / 3) ** 0.5
         return p_w * self.coefficient
@@ -216,8 +216,8 @@ class ConstrainsAnalysis_Gudmundsson_Method_with_DP:
 
         Cl_max_ld = 2.87
 
-        W_S_1 = 1 / 2 * self.rho * V_stall_to ** 2 * (Cl_max_to+ self.delta_cl)
-        W_S_2 = 1 / 2 * self.rho * V_stall_ld ** 2 * (Cl_max_ld+ self.delta_cl)
+        W_S_1 = 1 / 2 * self.rho * V_stall_to ** 2 * (Cl_max_to + self.delta_cl)
+        W_S_2 = 1 / 2 * self.rho * V_stall_ld ** 2 * (Cl_max_ld + self.delta_cl)
 
         W_S = min(W_S_1, W_S_2)
         return W_S
@@ -234,7 +234,7 @@ if __name__ == "__main__":
                            [11900, 230, 0.948], [3000, 100, 0.984], [0, 100, 0.984],
                            [3000, 200, 0.975], [7000, 230, 0.96]])
     color = ['c', 'k', 'b', 'g', 'y', 'plum', 'violet', 'm']
-    label = ['feasible region with PD', 'feasible region with PD','feasible region Gudmundsson',
+    label = ['feasible region with PD', 'feasible region with PD', 'feasible region Gudmundsson',
              'feasible region without PD', 'feasible region without PD', 'feasible region Mattingly']
     m = constrains.shape[0]
     p_w = np.zeros([2 * m, n])
@@ -251,7 +251,7 @@ if __name__ == "__main__":
                     problem1 = ConstrainsAnalysis_Gudmundsson_Method_with_DP(h, v, beta, w_s[j])
                     problem2 = ca.ConstrainsAnalysis_Gudmundsson_Method(h, v, beta, w_s[j])
                     plt.title(r'Constraint Analysis: $\bf{Gudmundsson-Method}$ - Normalized to Sea Level')
-                elif k ==1:
+                elif k == 1:
                     problem1 = ConstrainsAnalysis_Mattingly_Method_with_DP(h, v, beta, w_s[j])
                     problem2 = ca.ConstrainsAnalysis_Mattingly_Method(h, v, beta, w_s[j])
                     plt.title(r'Constraint Analysis: $\bf{Mattingly-Method}$ - Normalized to Sea Level')
@@ -285,12 +285,12 @@ if __name__ == "__main__":
         if k != 2:
             p_w[1 + m, :] = 10 ** 10 * (w_s - p_w[1 + m, 2])
         else:
-            p_w[1 + m, :] = 200 / (p_w[1+m, -1] - p_w[1+m, 20]) * (w_s - p_w[1 + m, 2])
+            p_w[1 + m, :] = 200 / (p_w[1 + m, -1] - p_w[1 + m, 20]) * (w_s - p_w[1 + m, 2])
 
         plt.fill_between(w_s, np.amax(p_w[0:m - 1, :], axis=0), 200, color='b', alpha=0.25,
-                        label=label[k])
+                         label=label[k])
         plt.fill_between(w_s, np.amax(p_w[m:2 * m - 1, :], axis=0), 200, color='r', alpha=0.25,
-                        label=label[k+3])
+                         label=label[k + 3])
         plt.xlabel('Wing Load: $W_{TO}$/S (N/${m^2}$)')
         plt.ylabel('Power-to-Load: $P_{SL}$/$W_{TO}$ (W/N)')
         plt.legend(bbox_to_anchor=(1.002, 1), loc="upper left")

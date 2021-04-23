@@ -19,7 +19,7 @@ class aerodynamics_without_pd:
         where we use A320neo as the baseline.
     """
 
-    def __init__(self, altitude, velocity,  AR=10.3):
+    def __init__(self, altitude, velocity, AR=10.3):
         """
 
         :input h (m): altitude
@@ -159,7 +159,7 @@ class aerodynamics_with_pd:
         """estimate the lift coefficient changes because of pd"""
 
         aoa_w = (CL / (2 * np.pi * self.ar)) * (2 + (
-                    self.ar ** 2 * (1 - self.m ** 2) * (1 + (np.tan(self.sp)) ** 2 / (1 - self.m ** 2)) + 4) ** 0.5)
+                self.ar ** 2 * (1 - self.m ** 2) * (1 + (np.tan(self.sp)) ** 2 / (1 - self.m ** 2)) + 4) ** 0.5)
 
         delta_cl = 2 * np.pi * ((np.sin(aoa_w) - self.aw * self.beta * np.sin(self.aoa_p - aoa_w))
                                 * ((self.aw * self.beta) ** 2 + 2 * self.aw * self.beta * np.cos(self.aoa_p) + 1) ** 0.5

@@ -197,7 +197,7 @@ class ConstrainsAnalysis_Gudmundsson_Method:
         """
 
         p_w = roc / (2 / self.rho * self.w_s * (self.k / (3 * self.cd_min)) ** 0.5) ** 0.5 + 4 * (
-               self.k * self.cd_min / 3) ** 0.5
+                self.k * self.cd_min / 3) ** 0.5
         return p_w * self.coefficient
 
     def stall_speed(self, V_stall_to=65, Cl_max_to=2.3):
@@ -215,97 +215,6 @@ class ConstrainsAnalysis_Gudmundsson_Method:
 
 
 if __name__ == "__main__":
-
-    """
-
-
-    nn = 100
-    wingload = np.linspace(100, 8000, nn)
-
-    take_off = np.zeros(nn)
-    landing = np.zeros(nn)
-    stall_speed = np.zeros(nn)
-    cruise = np.zeros(nn)
-    divert = np.zeros(nn)
-    loiter = np.zeros(nn)
-    service_ceiling = np.zeros(nn)
-
-    e = np.zeros(nn)
-    f = np.zeros(nn)
-    g = np.zeros(nn)
-    h = np.zeros(nn)
-    ii = np.zeros(nn)
-    j = np.zeros(nn)
-    takeoff2 = np.zeros(nn)
-    takeoff1 = np.zeros(nn)
-    k = np.zeros(nn)
-    n = np.zeros(nn)
-
-    cruise1 = np.zeros(nn)
-
-    for i in range(nn):
-
-        take_off[i] = ConstrainsAnalysis(altitude=0, velocity=73 / 2, tau=1, beta=0.988,
-                                         wing_load=wingload[i]).take_off()
-        landing[i] = ConstrainsAnalysis(altitude=0, velocity=63 / 2, tau=1, beta=0.7,
-                                        wing_load=wingload[i]).landing()
-        stall_speed[i] = ConstrainsAnalysis(altitude=0, velocity=80, tau=1, beta=1,
-                                            wing_load=wingload[i]).stall()
-        cruise[i] = ConstrainsAnalysis(altitude=10000, velocity=235, tau=1, beta=0.948,
-                                       wing_load=wingload[i]).cruise()
-        divert[i] = ConstrainsAnalysis(altitude=3000, velocity=165, tau=1, beta=0.77,
-                                       wing_load=wingload[i]).cruise()
-        loiter[i] = ConstrainsAnalysis(altitude=500, velocity=165, tau=1, beta=0.72,
-                                       wing_load=wingload[i]).level_constant_velocity_turn()
-        # service_ceiling[i] = ConstrainsAnalysis(altitude=10000, velocity=230, tau=1, beta=0.95,
-        #                                        wing_load=wingload[i]).acceleration_climb(230, 230, 0, 1.0, 2)
-
-        e[i] = ConstrainsAnalysis(altitude=5, velocity=78, tau=1, beta=0.985,
-                                  wing_load=wingload[i]).acceleration_climb(73, 78, 0, 10, 3)
-        f[i] = ConstrainsAnalysis(altitude=250, velocity=100, tau=1, beta=0.984,
-                                  wing_load=wingload[i]).acceleration_climb(78, 100, 10, 500, 38)
-        g[i] = ConstrainsAnalysis(altitude=500, velocity=125, tau=1, beta=0.982,
-                                  wing_load=wingload[i]).horizontal_acceleration(100, 150, 100)
-        h[i] = ConstrainsAnalysis(altitude=1500, velocity=157.5, tau=1, beta=0.981,
-                                  wing_load=wingload[i]).acceleration_climb(150, 165, 500, 3000, 227)
-        ii[i] = ConstrainsAnalysis(altitude=3000, velocity=182.5, tau=1, beta=0.975,
-                                  wing_load=wingload[i]).horizontal_acceleration(165, 200, 70)
-        j[i] = ConstrainsAnalysis(altitude=3000, velocity=200, tau=1, beta=0.973,
-                                  wing_load=wingload[i]).acceleration_climb(200, 225, 3000, 10000, 1300)
-        n[i] = ConstrainsAnalysis(altitude=1500, velocity=118, tau=1, beta=0.78,
-                                  wing_load=wingload[i]).acceleration_climb(70, 165, 100, 3000, 270)
-
-
-    plt.figure(figsize=(8, 6))
-    plt.plot(wingload, take_off, label='takeoff')
-    plt.plot(wingload, landing, label='landing')
-    plt.plot(stall_speed, np.linspace(0, 250, nn), label='stall')
-    plt.plot(wingload, cruise, label='cruise')
-    plt.plot(wingload, divert, label='divert')
-    plt.plot(wingload, loiter, label='loiter')
-    plt.plot(wingload, service_ceiling, label='service_ceiling')
-    plt.plot(wingload, e, label='e-AClimb')
-    plt.plot(wingload, f, label='f-AClimb')
-    plt.plot(wingload, g, label='g-A')
-    plt.plot(wingload, h, label='h-AClimb')
-    plt.plot(wingload, ii, label='i-A')
-    plt.plot(wingload, j, label='j-AClimb')
-    plt.plot(wingload, n, label='n-AClimb')
-    plt.plot(wingload, takeoff1, label='takeoff1')
-    plt.plot(wingload, takeoff2, label='takeoff2')
-    plt.plot(wingload, cruise1, label='cruise1')
-
-    plt.xlabel('Wing Load: $W_{TO}$/S (N/${m^2}$)')
-    plt.ylabel('Power-to-Load: $P_{SL}$/$W_{TO}$ (W/N)')
-    plt.title('Constraint Analysis')
-    plt.legend(bbox_to_anchor=(1.002, 1), loc="upper left")
-    plt.xlim(100, 8000)
-    plt.ylim(0, 200)
-    plt.tight_layout()
-    plt.grid()
-    plt.show()
-    """
-
     n = 100
     w_s = np.linspace(100, 9000, n)
     constrains_name = ['take off', 'stall speed', 'cruise', 'service ceiling', 'level turn @3000m',
