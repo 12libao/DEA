@@ -11,8 +11,6 @@ import Sizing_Method.ConstrainsAnalysis.ConstrainsAnalysis as ca
 """
 The unit use is IS standard
 """
-
-
 class ConstrainsAnalysis_Mattingly_Method_with_DP:
     """This is a power-based master constraints analysis"""
 

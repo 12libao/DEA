@@ -118,8 +118,8 @@ class Aero_propulsion:
         self.aw = (ap + 1) / rw_rp ** 2 - 1
 
         self.m = Mach.mach(self.h, self.v).mach_number()  # Mach number
-        # geometric angle of attack of the wing, where assume cl=1
-        # self.aoa_w = (1 / (2 * np.pi * self.ar)) * (2 + (self.ar ** 2 * (1 - self.m ** 2) * (1 + (np.tan(self.sp)) ** 2 / (1 - self.m ** 2)) + 4) ** 0.5)
+        # geometric angle of attack of the wing, where assume cl=1 self.aoa_w = (1 / (2 * np.pi * self.ar)) * (2 + (
+        # self.ar ** 2 * (1 - self.m ** 2) * (1 + (np.tan(self.sp)) ** 2 / (1 - self.m ** 2)) + 4) ** 0.5)
 
         # self.aoa_w = -2 * np.pi / 180  # check whether the model is accurate
 
