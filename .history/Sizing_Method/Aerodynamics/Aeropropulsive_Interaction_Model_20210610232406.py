@@ -30,10 +30,6 @@ half of the slipstream flows under the wing and half over the wing.
 9. incompressible flow condition.
 
 """
-import sys
-import os
-
-sys.path.insert(0, os.getcwd())
 
 import numpy as np
 import matplotlib.pylab as plt

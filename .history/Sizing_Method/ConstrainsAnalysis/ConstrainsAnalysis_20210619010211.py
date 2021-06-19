@@ -4,7 +4,7 @@
 import sys
 import os
 
-sys.path.insert(0, os.getcwd())
+sys.path.insert(0, os.getcw)
 
 import numpy as np
 import matplotlib.pylab as plt

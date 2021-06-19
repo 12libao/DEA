@@ -2,9 +2,7 @@
 # Georgia Institute of Technology #
 
 import sys
-import os
-
-sys.path.insert(0, os.getcwd())
+sys.path.append("...")
 
 import numpy as np
 import matplotlib.pylab as plt

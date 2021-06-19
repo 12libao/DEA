@@ -4,10 +4,6 @@
 
 1. Mattingly, Jack D., William H. Heiser, and David T. Pratt. Aircraft engine design. American Institute of Aeronautics and Astronautics, 2002.
 """
-import sys
-import os
-
-sys.path.insert(0, os.getcwd())
 
 import numpy as np
 import matplotlib.pylab as plt

@@ -1,10 +1,7 @@
 # author: Bao Li #
 # Georgia Institute of Technology #
 
-import sys
-import os
 
-sys.path.insert(0, os.getcwd())
 
 import numpy as np
 import matplotlib.pylab as plt

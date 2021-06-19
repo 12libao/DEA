@@ -24,7 +24,7 @@ c = [(1,2,3), (5,6,7)]
 
 
 input_list = [[20, 0], [100, 1000], [300, 2000]]
-
+print(np.max())
 velocity, altitude = [], []
 for i, element in enumerate(input_list):
     # print(i, element)
