@@ -7,6 +7,11 @@ sys.path.insert(0, os.getcwd())
 
 import numpy as np
 import matplotlib.pylab as plt
+import Sizing_Method.Other.US_Standard_Atmosphere_1976 as atm
+import Sizing_Method.Aerodynamics.ThrustLapse as thrust_lapse
+import Sizing_Method.Aerodynamics.Aerodynamics as ad
+import Sizing_Method.ConstrainsAnalysis.ConstrainsAnalysis as ca
+import Sizing_Method.ConstrainsAnalysis.ConstrainsAnalysisPD as ca_pd
 import Sizing_Method.ConstrainsAnalysis.ConstrainsAnalysisPDP1P2 as ca_pd_12
 from icecream import ic 
 import math
@@ -290,7 +295,7 @@ if __name__ == "__main__":
                  '%.2f' % hp_p_w_min_2[0] + '  take-off=' +
                  str(hp_p_w_min_2[1]) + '  cruise=' +
                  str(hp_p_w_min_2[2]) + '  service-ceiling=' +
-                 str(hp_p_w_min_2[3]) + '\n  level-turn=@3000m=' +
+                 str(hp_p_w_min_2[3]) + '\n  level-turn=@3000m' +
                  str(hp_p_w_min_2[4]) + '  climb@S-L=' +
                  str(hp_p_w_min_2[5]) + '  climb@3000m=' +
                  str(hp_p_w_min_2[6]) + '  climb@7000m=' + str(hp_p_w_min_2[7]))

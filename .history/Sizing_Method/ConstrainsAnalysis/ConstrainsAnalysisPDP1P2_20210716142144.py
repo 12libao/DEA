@@ -601,10 +601,10 @@ if __name__ == "__main__":
     plt.suptitle(r'$\bf{Component}$' ' ' r'$\bf{P_{SL}/W_{TO}}$' ' ' r'$\bf{Diagrams}$'
                  ' ' r'$\bf{After}$' ' ' r'$\bf{Adjust}$' ' ' r'$\bf{Degree-of-Hybridization}$'
                  '\n hp: stall-speed=' +
-                 str(hp[0]) + '  take-off=' +
+                 str(hp[0]) + '  stall-speed=' +
                  str(hp[1]) + '  cruise=' +
                  str(hp[2]) + '  service-ceiling='+
-                 str(hp[3]) + '\n level-turn=@3000m=' +
+                 str(hp[3]) + '\n level-turn=@3000m' +
                  str(hp[4]) + '  climb@S-L=' + 
                  str(hp[5]) + '  climb@3000m=' + 
                  str(hp[6]) + '  climb@7000m=' + str(hp[7]))

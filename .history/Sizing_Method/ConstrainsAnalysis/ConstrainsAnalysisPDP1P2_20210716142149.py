@@ -604,7 +604,7 @@ if __name__ == "__main__":
                  str(hp[0]) + '  take-off=' +
                  str(hp[1]) + '  cruise=' +
                  str(hp[2]) + '  service-ceiling='+
-                 str(hp[3]) + '\n level-turn=@3000m=' +
+                 str(hp[3]) + '\n level-turn=@3000m' +
                  str(hp[4]) + '  climb@S-L=' + 
                  str(hp[5]) + '  climb@3000m=' + 
                  str(hp[6]) + '  climb@7000m=' + str(hp[7]))

@@ -195,7 +195,7 @@ if __name__ == "__main__":
                ca_pd_12.ConstrainsAnalysis_Mattingly_Method_with_DP_electric,
                ca_pd_12.ConstrainsAnalysis_Gudmundsson_Method_with_DP_electric]
     strategy = [0, 1, 1]
-    propulsion = [0, 0, 1]
+    propulsion = [0, 0, 0]
 
     # plots
     fig, ax = plt.subplots(3, 2, sharey=True, sharex=True, figsize=(10, 12))

@@ -7,6 +7,11 @@ sys.path.insert(0, os.getcwd())
 
 import numpy as np
 import matplotlib.pylab as plt
+import Sizing_Method.Other.US_Standard_Atmosphere_1976 as atm
+import Sizing_Method.Aerodynamics.ThrustLapse as thrust_lapse
+import Sizing_Method.Aerodynamics.Aerodynamics as ad
+import Sizing_Method.ConstrainsAnalysis.ConstrainsAnalysis as ca
+import Sizing_Method.ConstrainsAnalysis.ConstrainsAnalysisPD as ca_pd
 import Sizing_Method.ConstrainsAnalysis.ConstrainsAnalysisPDP1P2 as ca_pd_12
 from icecream import ic 
 import math
@@ -195,7 +200,7 @@ if __name__ == "__main__":
                ca_pd_12.ConstrainsAnalysis_Mattingly_Method_with_DP_electric,
                ca_pd_12.ConstrainsAnalysis_Gudmundsson_Method_with_DP_electric]
     strategy = [0, 1, 1]
-    propulsion = [0, 0, 1]
+    propulsion = [0, 0, 0]
 
     # plots
     fig, ax = plt.subplots(3, 2, sharey=True, sharex=True, figsize=(10, 12))
@@ -286,11 +291,11 @@ if __name__ == "__main__":
     plt.subplots_adjust(bottom=0.15)
     plt.suptitle(r'$\bf{Component}$' ' ' r'$\bf{P_{SL}/W_{TO}}$' ' ' r'$\bf{Diagrams}$'
                  ' ' r'$\bf{After}$' ' ' r'$\bf{Adjust}$' ' ' r'$\bf{Degree-of-Hybridization}$'
-                 '\n hp adjust with threshold for Gudmundsson Method: \n stall-speed=' +
-                 '%.2f' % hp_p_w_min_2[0] + '  take-off=' +
+                 '\n hp adjust with threshold for Gudmundsson Method: take-off=' +
+                 '%.2f' % hp_p_w_min_2[0] + '  stall-speed=' +
                  str(hp_p_w_min_2[1]) + '  cruise=' +
                  str(hp_p_w_min_2[2]) + '  service-ceiling=' +
-                 str(hp_p_w_min_2[3]) + '\n  level-turn=@3000m=' +
+                 str(hp_p_w_min_2[3]) + '\n level-turn=@3000m' +
                  str(hp_p_w_min_2[4]) + '  climb@S-L=' +
                  str(hp_p_w_min_2[5]) + '  climb@3000m=' +
                  str(hp_p_w_min_2[6]) + '  climb@7000m=' + str(hp_p_w_min_2[7]))
